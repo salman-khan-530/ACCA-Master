@@ -5,16 +5,16 @@ import {
   User,
   Mail,
   Shield,
-  BookOpen,
-  Eye,
   CheckCircle2,
   Save,
   AlertCircle,
   Calendar,
+  ArrowRight,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const ProfilePage: React.FC = () => {
-  const { userProfile, updateProfileDetails } = useAuth();
+  const { userProfile, updateProfileDetails, isAdmin } = useAuth();
 
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [selectedPapers, setSelectedPapers] = useState<string[]>(
@@ -42,7 +42,7 @@ export const ProfilePage: React.FC = () => {
     setError(null);
 
     if (!displayName.trim()) {
-      setError('Name cannot be empty.');
+      setError('Display name cannot be empty.');
       return;
     }
 
@@ -64,9 +64,9 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Student Profile</h1>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Account Profile</h1>
         <p className="text-slate-600 text-sm mt-1">
-          Manage your personal information, enrolled ACCA papers, and privacy preferences.
+          Manage your student credentials, enrolled ACCA study papers, and leaderboard privacy preferences.
         </p>
       </div>
 
@@ -87,17 +87,21 @@ export const ProfilePage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Account Snapshot Card */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-700 text-white font-extrabold text-2xl flex items-center justify-center shadow-md">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-700 text-white font-extrabold text-2xl flex items-center justify-center shadow-md shrink-0">
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="space-y-2 text-center sm:text-left flex-1">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <h2 className="text-xl font-bold text-slate-900">{displayName}</h2>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800">
-                {userProfile.role}
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  isAdmin ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                }`}
+              >
+                {isAdmin ? 'Administrator' : 'Student Account'}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                Active Account
+                Verified Status
               </span>
             </div>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-500 pt-1">
@@ -111,6 +115,29 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Admin Console Banner if Administrator */}
+        {isAdmin && (
+          <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Administrator Privileges Active</p>
+                <p className="text-xs text-amber-100">
+                  You have full authorization to manage ACCA papers, topics, MCQs, and mock examinations.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/admin"
+              className="px-4 py-2 bg-white text-amber-900 font-bold rounded-xl text-xs hover:bg-amber-50 transition flex items-center gap-1.5 shrink-0 shadow-sm"
+            >
+              Open Admin Console <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
 
         {/* General Details */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-5">
@@ -148,7 +175,7 @@ export const ProfilePage: React.FC = () => {
               />
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Email address is linked to your primary authentication record.
+              Email address is linked to your primary authentication record and cannot be changed here.
             </p>
           </div>
         </div>
@@ -159,7 +186,7 @@ export const ProfilePage: React.FC = () => {
             <div>
               <h3 className="text-base font-bold text-slate-900">Enrolled ACCA Papers</h3>
               <p className="text-xs text-slate-500">
-                Select the papers you are currently studying. These will appear highlighted on your dashboard.
+                Select the papers you are currently studying. These will appear prioritized on your candidate dashboard.
               </p>
             </div>
             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">

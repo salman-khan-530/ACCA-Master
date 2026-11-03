@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { UserProfile, UserRole } from '../types';
+import { UserProfile } from '../types';
 import { auth, firestore, isFirebaseConfigured } from '../services/firebase';
 import { dbService } from '../services/dbService';
 import {
@@ -20,13 +20,11 @@ interface AuthContextType {
   isAdmin: boolean;
   isStudent: boolean;
   isFirebaseActive: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<UserProfile | null>;
   register: (name: string, email: string, pass: string, selectedPapers?: string[]) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfileDetails: (updates: Partial<UserProfile>) => Promise<void>;
-  loginDemoStudent: () => Promise<void>;
-  loginDemoAdmin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Sync state changes to local cache for offline/instant resume
+  // Sync state changes to local cache
   useEffect(() => {
     if (userProfile) {
       localStorage.setItem(CURRENT_USER_PROFILE_KEY, JSON.stringify(userProfile));
@@ -71,7 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   uid: fbUser.uid,
                   email: fbUser.email || '',
                   displayName: fbUser.displayName || 'ACCA Scholar',
-                  role: 'student', // Always default to student!
+                  role: 'student', // Always default to student on registration
                   selectedPapers: ['fa1'],
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
@@ -86,26 +84,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('Error fetching Firestore user profile:', err);
           }
         } else {
-          // If logged out from Firebase
           setUserProfile(null);
         }
         setLoading(false);
       });
       return unsubscribe;
     } else {
-      // In local mode, if no active profile, default to demo student for an immediate rich experience
-      if (!userProfile) {
-        const localUsers = JSON.parse(localStorage.getItem('acca_master_users') || '[]');
-        const demoStudent = localUsers.find((u: UserProfile) => u.uid === 'demo-student-id') || null;
-        setUserProfile(demoStudent);
-      }
+      // In local mode, only restore stored session, do not auto-login
       setLoading(false);
     }
   }, []);
 
-  const login = async (email: string, pass: string): Promise<void> => {
+  const login = async (email: string, pass: string): Promise<UserProfile | null> => {
     if (isFirebaseConfigured() && auth) {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      if (firestore) {
+        const docRef = doc(firestore, 'users', cred.user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const profile = docSnap.data() as UserProfile;
+          setUserProfile(profile);
+          return profile;
+        }
+      }
+      return null;
     } else {
       // Local mode authentication
       const localUsers: UserProfile[] = JSON.parse(localStorage.getItem('acca_master_users') || '[]');
@@ -117,6 +119,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('This account has been deactivated. Please contact support.');
       }
       setUserProfile(user);
+      return user;
     }
   };
 
@@ -149,7 +152,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         uid: `user-${Date.now()}`,
         email: email.toLowerCase(),
         displayName: name,
-        role: 'student',
+        role: 'student', // Always student
         selectedPapers,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -168,13 +171,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     setUserProfile(null);
     setCurrentUser(null);
+    localStorage.removeItem(CURRENT_USER_PROFILE_KEY);
   };
 
   const resetPassword = async (email: string): Promise<void> => {
     if (isFirebaseConfigured() && auth) {
       await fbSendPasswordResetEmail(auth, email);
     } else {
-      // In local mode, simulate a successful password reset email notification
       const localUsers: UserProfile[] = JSON.parse(localStorage.getItem('acca_master_users') || '[]');
       const user = localUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
       if (!user) {
@@ -185,25 +188,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateProfileDetails = async (updates: Partial<UserProfile>): Promise<void> => {
     if (!userProfile) return;
-    const updated: UserProfile = { ...userProfile, ...updates, updatedAt: new Date().toISOString() };
-    await dbService.updateUserProfile(userProfile.uid, updates);
+    // Security check: non-admin users cannot promote themselves
+    const sanitizedUpdates = { ...updates };
+    if (userProfile.role !== 'admin') {
+      delete sanitizedUpdates.role;
+      delete sanitizedUpdates.status;
+    }
+    const updated: UserProfile = { ...userProfile, ...sanitizedUpdates, updatedAt: new Date().toISOString() };
+    await dbService.updateUserProfile(userProfile.uid, sanitizedUpdates);
     setUserProfile(updated);
-  };
-
-  const loginDemoStudent = async (): Promise<void> => {
-    const localUsers: UserProfile[] = JSON.parse(localStorage.getItem('acca_master_users') || '[]');
-    const demoStudent = localUsers.find((u) => u.uid === 'demo-student-id');
-    if (demoStudent) {
-      setUserProfile(demoStudent);
-    }
-  };
-
-  const loginDemoAdmin = async (): Promise<void> => {
-    const localUsers: UserProfile[] = JSON.parse(localStorage.getItem('acca_master_users') || '[]');
-    const demoAdmin = localUsers.find((u) => u.uid === 'demo-admin-id');
-    if (demoAdmin) {
-      setUserProfile(demoAdmin);
-    }
   };
 
   const isAdmin = userProfile?.role === 'admin';
@@ -224,8 +217,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         resetPassword,
         updateProfileDetails,
-        loginDemoStudent,
-        loginDemoAdmin,
       }}
     >
       {children}

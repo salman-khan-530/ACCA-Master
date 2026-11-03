@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Logo } from '../../components/common/Logo';
-import { Mail, Lock, LogIn, AlertCircle, Sparkles, Shield, User } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +10,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, loginDemoStudent, loginDemoAdmin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -20,38 +20,25 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!email || !password) {
-      setError('Please provide both your email address and password.');
+      setError('Please provide both your registered email address and password.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await login(email, password);
-      navigate(redirectPath, { replace: true });
+      const profile = await login(email.trim(), password);
+
+      // Route based on authenticated user role:
+      // Administrators are directed to the management console; students to their learning dashboard
+      if (profile?.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(redirectPath, { replace: true });
+      }
     } catch (err: any) {
-      setError(err?.message || 'Failed to authenticate. Please check your credentials.');
+      setError(err?.message || 'Invalid credentials. Please verify your email and password.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleDemoStudent = async () => {
-    setError(null);
-    try {
-      await loginDemoStudent();
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      setError(err?.message || 'Error signing in as demo student.');
-    }
-  };
-
-  const handleDemoAdmin = async () => {
-    setError(null);
-    try {
-      await loginDemoAdmin();
-      navigate('/admin', { replace: true });
-    } catch (err: any) {
-      setError(err?.message || 'Error signing in as demo administrator.');
     }
   };
 
@@ -62,36 +49,10 @@ export const LoginPage: React.FC = () => {
           <div className="flex justify-center mb-2">
             <Logo size="lg" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sign In to ACCA Master</h2>
           <p className="text-sm text-slate-600">
-            Sign in to access your ACCA study dashboard, mock tests, and analytics.
+            Enter your credentials to access your candidate workspace or administrative console.
           </p>
-        </div>
-
-        {/* Demo Fast Login Cards */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4 rounded-2xl border border-blue-200/70 space-y-3">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Instant Evaluation Quick Logins
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={handleDemoStudent}
-              className="px-3 py-2 bg-white hover:bg-blue-600 hover:text-white text-slate-800 text-xs font-bold rounded-xl border border-blue-200 shadow-xs flex items-center justify-center gap-1.5 transition"
-            >
-              <User className="w-3.5 h-3.5" />
-              Demo Student
-            </button>
-            <button
-              type="button"
-              onClick={handleDemoAdmin}
-              className="px-3 py-2 bg-white hover:bg-amber-600 hover:text-white text-slate-800 text-xs font-bold rounded-xl border border-amber-200 shadow-xs flex items-center justify-center gap-1.5 transition"
-            >
-              <Shield className="w-3.5 h-3.5 text-amber-600" />
-              Demo Admin
-            </button>
-          </div>
         </div>
 
         {error && (
@@ -101,6 +62,7 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
+        {/* Credentials Form */}
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl border border-slate-200/90 shadow-sm space-y-5">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
@@ -112,7 +74,7 @@ export const LoginPage: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="student@example.com"
+                placeholder="name@example.com"
                 required
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
               />
@@ -159,12 +121,17 @@ export const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-600">
-          Don't have an account yet?{' '}
-          <Link to="/register" className="font-bold text-blue-600 hover:text-blue-700">
-            Register here
-          </Link>
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-xs text-slate-600">
+            Don't have an account yet?{' '}
+            <Link to="/register" className="font-bold text-blue-600 hover:text-blue-700">
+              Register as a student
+            </Link>
+          </p>
+          <p className="text-[11px] text-slate-400">
+            Administrative access requires dedicated authorized credentials.
+          </p>
+        </div>
       </div>
     </div>
   );

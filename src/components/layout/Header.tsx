@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Shield,
   Bookmark,
-  CheckCircle2,
   Database,
   Cloud,
   ChevronDown,
@@ -49,22 +48,33 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-medium text-slate-200">ACCA Master 2026</span>
+            <span className="font-medium text-slate-200">ACCA Master</span>
             <span className="hidden sm:inline text-slate-400">|</span>
-            <span className="hidden sm:inline text-slate-400">Comprehensive CBE Practice & Mock Examination System</span>
+            <span className="hidden sm:inline text-slate-400">Computer Based Examination (CBE) Learning Platform</span>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Admin Console shortcut - ONLY visible to verified administrators */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-300 bg-amber-950/80 border border-amber-600 hover:bg-amber-900 px-2.5 py-0.5 rounded-full transition"
+              >
+                <Shield className="w-3 h-3 text-amber-400" />
+                <span>Admin Console</span>
+              </Link>
+            )}
+
             {isFirebaseActive ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
                 <Cloud className="w-3 h-3" /> Firebase Live
               </span>
             ) : (
               <span
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800"
-                title="Running on local client engine. Fill .env to connect Cloud Firestore."
+                className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700"
+                title="Running on local client engine."
               >
-                <Database className="w-3 h-3" /> Local Engine Active
+                <Database className="w-3 h-3" /> Local Engine
               </span>
             )}
           </div>
@@ -123,7 +133,11 @@ export const Header: React.FC = () => {
                     <p className="text-xs font-bold text-slate-800 leading-tight">
                       {userProfile.displayName.split(' ')[0]}
                     </p>
-                    <span className="text-[10px] uppercase font-semibold text-blue-600">
+                    <span
+                      className={`text-[10px] uppercase font-bold ${
+                        isAdmin ? 'text-amber-600' : 'text-blue-600'
+                      }`}
+                    >
                       {userProfile.role}
                     </span>
                   </div>
@@ -165,11 +179,12 @@ export const Header: React.FC = () => {
                       My Profile
                     </Link>
 
+                    {/* Admin Console link - ONLY rendered if the authenticated user is an administrator */}
                     {isAdmin && (
                       <Link
                         to="/admin"
                         onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-amber-700 bg-amber-50/50 hover:bg-amber-100/60 font-semibold"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 font-bold transition"
                       >
                         <Shield className="w-4 h-4 text-amber-600" />
                         Admin Console
@@ -180,7 +195,7 @@ export const Header: React.FC = () => {
 
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium text-left"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium text-left transition"
                     >
                       <LogOut className="w-4 h-4 text-red-500" />
                       Sign Out
@@ -250,7 +265,7 @@ export const Header: React.FC = () => {
             Contact
           </NavLink>
 
-          <div className="pt-4 border-t border-slate-100">
+          <div className="pt-4 border-t border-slate-100 space-y-2">
             {userProfile ? (
               <div className="space-y-2">
                 <div className="px-3 py-2 bg-slate-50 rounded-lg mb-2">
@@ -272,6 +287,7 @@ export const Header: React.FC = () => {
                 >
                   Saved Questions
                 </Link>
+
                 {isAdmin && (
                   <Link
                     to="/admin"
@@ -281,6 +297,7 @@ export const Header: React.FC = () => {
                     Admin Console
                   </Link>
                 )}
+
                 <button
                   onClick={() => {
                     handleLogout();
