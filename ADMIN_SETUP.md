@@ -4,43 +4,54 @@ This document explains how platform owners securely initialize administrator acc
 
 ---
 
-## 1. Security Architecture: Role Assignment
+## 1. Security Architecture & Strict Role Separation
 
-In accordance with strict security standards, **admin roles are never assigned through the public registration form**. Any user who registers through `/register` is automatically assigned the `student` role.
+In accordance with strict production security standards:
+- **Zero Public Admin Triggers**: There are **no** "Switch to Admin" buttons, public admin links, or role-elevation checkboxes visible to students or visitors.
+- **Header Isolation**: The "Admin Console" link is dynamically rendered in the navigation header **only** when an authenticated user has `role: 'admin'`. Students see only their personal dashboard, practice tools, and bookmarks.
+- **Route Guards (RBAC)**: If an unauthorized user attempts to navigate directly to `/admin`, `ProtectedRoute.tsx` intercepts the request and serves a `403 Access Denied` barrier with no option to elevate privileges.
+- **Automatic Student Defaulting**: Every new account registered through `/register` is strictly created with `role: 'student'`.
 
-### Setting Up the First Administrator
+---
 
-#### Method A: Instant Local Demo Evaluation (Out of the Box)
-If running locally without live Firebase keys, log in immediately using the pre-seeded admin profile:
-- Email: `admin@accamaster.com`
-- Button: Click **"Demo Admin"** on the `/login` screen.
-- Role: Pre-configured as `admin` with full access to `/admin`.
+## 2. Administrator Authentication & Setup
 
-#### Method B: In Live Cloud Firestore
-1. Create a student account normally through `/register` (e.g. `owner@yourdomain.com`).
-2. Go to your **Firebase Console** -> **Firestore Database** -> `users` collection.
-3. Locate the document matching your user's `UID`.
-4. Edit the document field:
+### A. Local / Offline Engine Testing
+To test administrative capabilities in offline/local mode:
+- Navigate to `/login`
+- Enter Administrator Email: `admin@accamaster.com`
+- Enter Password: `password123` (or any non-empty password)
+- Click **Sign In**: The system recognizes the administrator record and automatically routes you to `/admin`.
+
+### B. Live Production Setup (Firebase Authentication & Cloud Firestore)
+When deploying to a live client domain:
+1. Register the client's official email at `/register` (e.g. `director@accamaster.com`).
+2. Open your **Firebase Console** -> **Firestore Database** -> `users` collection.
+3. Open the document corresponding to the administrator's `uid`.
+4. Change the `role` field value from `"student"` to `"admin"`:
    ```json
-   "role": "admin"
+   {
+     "role": "admin"
+   }
    ```
-5. Refresh the browser and navigate to `/admin`.
+5. The next time this user logs in, they are instantly recognized as an administrator and given access to `/admin`. Regular students will have zero access.
 
-#### Method C: Firebase Admin SDK / Custom Claims (Production)
-Run a script using `firebase-admin` to set custom claims:
+### C. Advanced Production Protection (Firebase Custom Claims)
+For mission-critical deployments, admin roles can be enforced at the Firebase Auth token layer:
 ```javascript
 import admin from 'firebase-admin';
 
 admin.initializeApp();
 const uid = "YOUR_ADMIN_USER_UID";
 
-await admin.auth().setCustomUserClaims(uid, { admin: true });
-console.log(`Administrator claims assigned to UID: ${uid}`);
+await admin.auth().setCustomUserClaims(uid, { role: 'admin' });
+console.log(`Administrator token claims assigned to UID: ${uid}`);
 ```
+The included `firestore.rules` file enforces that question creation, topic updates, and mock exam publishing require `request.auth.token.role == 'admin'`.
 
 ---
 
-## 2. Bulk Question Import using CSV
+## 3. Bulk Question Import using CSV
 
 Administrators can bulk-upload hundreds of MCQs in seconds using our integrated CSV parser.
 
@@ -71,7 +82,7 @@ From the **Admin Console** -> **Question Bank** tab, click **"Download CSV Templ
 
 ---
 
-## 3. Managing Topics & Mock Examinations
+## 4. Managing Topics & Mock Examinations
 
 ### Adding Topics:
 1. Navigate to **Admin Console** -> **Topics** tab.
