@@ -14,12 +14,17 @@ const firebaseConfig = {
 
 export const isFirebaseConfigured = (): boolean => {
   const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
   return Boolean(
     apiKey &&
+    apiKey.trim() !== '' &&
+    !apiKey.includes('YOUR_') &&
     apiKey !== 'your-api-key' &&
     apiKey !== 'placeholder' &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'your-project-id'
+    apiKey !== 'AIzaSyYourApiKeyHere' &&
+    projectId &&
+    projectId.trim() !== '' &&
+    projectId !== 'your-project-id'
   );
 };
 
