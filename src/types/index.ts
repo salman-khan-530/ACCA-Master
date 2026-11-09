@@ -170,3 +170,15 @@ export interface LeaderboardEntry {
   lastActive: string;
   rank?: number;
 }
+
+export interface PlatformSettings {
+  id?: string;
+  officialEmail: string;
+  contactNumber: string;
+  whatsAppGroupUrl: string;
+  whatsAppChannelUrl: string;
+  youTubeChannelUrl: string;
+  facebookPageUrl: string;
+  telegramGroupUrl?: string;
+  updatedAt?: string;
+}

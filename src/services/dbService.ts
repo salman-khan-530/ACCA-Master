@@ -10,6 +10,7 @@ import {
   Announcement,
   LeaderboardEntry,
   UserProfile,
+  PlatformSettings,
 } from '../types';
 import { ACCA_PAPERS } from '../data/papersData';
 import { FA1_TOPICS } from '../data/fa1TopicsData';
@@ -44,6 +45,17 @@ const STORAGE_KEYS = {
   RESOURCES: 'acca_master_resources',
   ANNOUNCEMENTS: 'acca_master_announcements',
   USERS: 'acca_master_users',
+  SETTINGS: 'acca_master_settings',
+};
+
+export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  officialEmail: 'support@accamaster.org',
+  contactNumber: '+44 20 7946 0912',
+  whatsAppGroupUrl: 'https://chat.whatsapp.com/invite/acca-master-community',
+  whatsAppChannelUrl: 'https://whatsapp.com/channel/acca-master-updates',
+  youTubeChannelUrl: 'https://youtube.com/@accamaster',
+  facebookPageUrl: 'https://facebook.com/accamaster',
+  telegramGroupUrl: 'https://t.me/accamaster',
 };
 
 // Initialize seed data if not present in localStorage
@@ -1181,5 +1193,39 @@ export const dbService = {
       users[idx] = { ...users[idx], ...updates, updatedAt: new Date().toISOString() };
       setLocal(STORAGE_KEYS.USERS, users);
     }
+  },
+
+  // --- PLATFORM SETTINGS & COMMUNITY LINKS ---
+  async getPlatformSettings(): Promise<PlatformSettings> {
+    if (isFirebaseConfigured() && firestore) {
+      try {
+        const snap = await getDoc(doc(firestore, 'settings', 'general'));
+        if (snap.exists()) {
+          return { ...DEFAULT_PLATFORM_SETTINGS, ...(snap.data() as PlatformSettings) };
+        }
+      } catch (err) {
+        console.warn('Firestore getPlatformSettings fallback:', err);
+      }
+    }
+    return getLocal<PlatformSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_PLATFORM_SETTINGS);
+  },
+
+  async updatePlatformSettings(settings: Partial<PlatformSettings>): Promise<PlatformSettings> {
+    const current = await this.getPlatformSettings();
+    const updated: PlatformSettings = {
+      ...current,
+      ...settings,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (isFirebaseConfigured() && firestore) {
+      try {
+        await setDoc(doc(firestore, 'settings', 'general'), updated, { merge: true });
+      } catch (err) {
+        console.warn('Firestore updatePlatformSettings fallback:', err);
+      }
+    }
+    setLocal(STORAGE_KEYS.SETTINGS, updated);
+    return updated;
   },
 };

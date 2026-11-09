@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { dbService, DEFAULT_PLATFORM_SETTINGS } from '../../services/dbService';
+import { PlatformSettings } from '../../types';
 import {
   Mail,
   Phone,
@@ -17,17 +19,13 @@ export const ContactPage: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
+  const [contactConfig, setContactConfig] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
 
-  // Configurable community contact details with legitimate placeholders as required
-  const contactConfig = {
-    officialEmail: 'support@example-accamaster.org',
-    contactNumber: '+00 000 0000 000 (Owner Support Hotline)',
-    whatsAppGroupUrl: 'https://chat.whatsapp.com/invite/placeholder-acca-master',
-    whatsAppChannelUrl: 'https://whatsapp.com/channel/placeholder-acca-master-updates',
-    youTubeChannelUrl: 'https://youtube.com/@accamaster-placeholder',
-    facebookPageUrl: 'https://facebook.com/accamaster.placeholder',
-    telegramGroupUrl: 'https://t.me/accamaster_placeholder',
-  };
+  useEffect(() => {
+    dbService.getPlatformSettings().then((settings) => {
+      setContactConfig(settings);
+    });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dbService } from '../../services/dbService';
+import { dbService, DEFAULT_PLATFORM_SETTINGS } from '../../services/dbService';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   UserProfile,
@@ -9,6 +9,7 @@ import {
   MockExam,
   LearningResource,
   Announcement,
+  PlatformSettings,
 } from '../../types';
 import {
   LayoutDashboard,
@@ -34,14 +35,24 @@ import {
   MoveUp,
   MoveDown,
   Sparkles,
+  Settings,
+  MessageSquare,
+  Share2,
+  Video,
+  Phone,
+  Mail,
+  Save,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { userProfile, isAdmin } = useAuth();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'students' | 'papers' | 'topics' | 'questions' | 'mocks' | 'resources' | 'announcements'
+    'overview' | 'students' | 'papers' | 'topics' | 'questions' | 'mocks' | 'resources' | 'announcements' | 'settings'
   >('overview');
+
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Platform state
   const [students, setStudents] = useState<UserProfile[]>([]);
@@ -107,7 +118,7 @@ export const AdminDashboard: React.FC = () => {
   const [csvFeedback, setCsvFeedback] = useState<string | null>(null);
 
   const reloadData = async () => {
-    const [uList, pList, tList, qList, mList, rList, aList] = await Promise.all([
+    const [uList, pList, tList, qList, mList, rList, aList, sList] = await Promise.all([
       dbService.getAllUsers(),
       dbService.getPapers(),
       dbService.getTopics(selectedPaperId),
@@ -115,6 +126,7 @@ export const AdminDashboard: React.FC = () => {
       dbService.getMockExams(),
       dbService.getResources(),
       dbService.getAnnouncements(),
+      dbService.getPlatformSettings(),
     ]);
     setStudents(uList);
     setPapers(pList);
@@ -123,6 +135,21 @@ export const AdminDashboard: React.FC = () => {
     setMockExams(mList);
     setResources(rList);
     setAnnouncements(aList);
+    setPlatformSettings(sList);
+  };
+
+  const handleSavePlatformSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      const updated = await dbService.updatePlatformSettings(platformSettings);
+      setPlatformSettings(updated);
+      showToast('success', 'Social and community links updated successfully across the entire website!');
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to update community links.');
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   useEffect(() => {
@@ -485,6 +512,17 @@ export const AdminDashboard: React.FC = () => {
             }`}
           >
             Announcements ({announcements.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition shrink-0 flex items-center gap-1.5 ${
+              activeTab === 'settings'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Social & Community Links
           </button>
         </div>
       </div>
@@ -987,6 +1025,184 @@ export const AdminDashboard: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* --- TAB: SETTINGS & SOCIAL COMMUNITY LINKS --- */}
+      {activeTab === 'settings' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-emerald-100 text-emerald-700 rounded-2xl shrink-0">
+                <Settings className="w-6 h-6" />
+              </span>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Community & Social Media Links</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Paste your official WhatsApp, Facebook, YouTube, and support links below. These immediately update the
+                  "Join WhatsApp Study Group" button, social icons, and contact channels across the entire website.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSavePlatformSettings} className="space-y-6 max-w-4xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* WhatsApp Group */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  WhatsApp Study Group Invite Link
+                </label>
+                <div className="relative">
+                  <MessageSquare className="w-4 h-4 text-emerald-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={platformSettings.whatsAppGroupUrl}
+                    onChange={(e) =>
+                      setPlatformSettings({ ...platformSettings, whatsAppGroupUrl: e.target.value })
+                    }
+                    placeholder="https://chat.whatsapp.com/invite/..."
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Powers the prominent green "Join WhatsApp Study Group" button in the footer and contact page.
+                </p>
+              </div>
+
+              {/* WhatsApp Channel */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  WhatsApp Broadcast Channel Link
+                </label>
+                <div className="relative">
+                  <MessageSquare className="w-4 h-4 text-emerald-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={platformSettings.whatsAppChannelUrl}
+                    onChange={(e) =>
+                      setPlatformSettings({ ...platformSettings, whatsAppChannelUrl: e.target.value })
+                    }
+                    placeholder="https://whatsapp.com/channel/..."
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Used for broadcasting exam announcements, syllabus tips, and mock release alerts.
+                </p>
+              </div>
+
+              {/* Facebook Link */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Facebook Page or Group Link
+                </label>
+                <div className="relative">
+                  <Share2 className="w-4 h-4 text-blue-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={platformSettings.facebookPageUrl}
+                    onChange={(e) =>
+                      setPlatformSettings({ ...platformSettings, facebookPageUrl: e.target.value })
+                    }
+                    placeholder="https://facebook.com/..."
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Official Facebook community page for student engagement.
+                </p>
+              </div>
+
+              {/* YouTube Channel */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  YouTube Channel Link (Lectures & Walkthroughs)
+                </label>
+                <div className="relative">
+                  <Video className="w-4 h-4 text-red-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={platformSettings.youTubeChannelUrl}
+                    onChange={(e) =>
+                      setPlatformSettings({ ...platformSettings, youTubeChannelUrl: e.target.value })
+                    }
+                    placeholder="https://youtube.com/@..."
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Powers the YouTube icon in the footer and lecture links.
+                </p>
+              </div>
+
+              {/* Official Support Email */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Official Support Email
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    value={platformSettings.officialEmail}
+                    onChange={(e) =>
+                      setPlatformSettings({ ...platformSettings, officialEmail: e.target.value })
+                    }
+                    placeholder="support@accamaster.com"
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Displays on the Contact page and connects to the footer email icon.
+                </p>
+              </div>
+
+              {/* Support Phone / Hotline */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Support Contact Number / WhatsApp Hotline
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={platformSettings.contactNumber}
+                    onChange={(e) =>
+                      setPlatformSettings({ ...platformSettings, contactNumber: e.target.value })
+                    }
+                    placeholder="+92 300 1234567"
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Displays on the Contact page for candidates needing direct contact.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                {platformSettings.updatedAt && (
+                  <>Last saved: {new Date(platformSettings.updatedAt).toLocaleTimeString()}</>
+                )}
+              </span>
+              <button
+                type="submit"
+                disabled={isSavingSettings}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {isSavingSettings ? 'Saving...' : 'Save All Links'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../common/Logo';
+import { dbService, DEFAULT_PLATFORM_SETTINGS } from '../../services/dbService';
+import { PlatformSettings } from '../../types';
 import {
   Mail,
   MessageSquare,
@@ -13,6 +15,12 @@ import {
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
+
+  useEffect(() => {
+    dbService.getPlatformSettings().then((s) => setSettings(s));
+  }, []);
+
   return (
     <footer className="bg-slate-950 text-slate-300 border-t border-slate-800">
       {/* Top Banner / Community Callout */}
@@ -27,13 +35,15 @@ export const Footer: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              to="/contact"
+            <a
+              href={settings.whatsAppGroupUrl}
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md transition text-sm"
             >
               <MessageSquare className="w-4 h-4" />
               Join WhatsApp Study Group
-            </Link>
+            </a>
             <Link
               to="/resources"
               className="inline-flex items-center gap-2 bg-slate-800/80 hover:bg-slate-800 text-slate-100 font-semibold px-4 py-2.5 rounded-xl border border-slate-700 transition text-sm"
@@ -57,7 +67,7 @@ export const Footer: React.FC = () => {
             </p>
             <div className="pt-2 flex items-center space-x-3 text-slate-400">
               <a
-                href="https://youtube.com"
+                href={settings.youTubeChannelUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-red-600 hover:text-white flex items-center justify-center transition"
@@ -65,20 +75,22 @@ export const Footer: React.FC = () => {
               >
                 <Video className="w-4 h-4" />
               </a>
-              <Link
-                to="/contact"
+              <a
+                href={`mailto:${settings.officialEmail}`}
                 className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-blue-600 hover:text-white flex items-center justify-center transition"
                 aria-label="Email Us"
               >
                 <Mail className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/contact"
+              </a>
+              <a
+                href={settings.whatsAppGroupUrl}
+                target="_blank"
+                rel="noreferrer"
                 className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition"
-                aria-label="Community Discussions"
+                aria-label="Join WhatsApp Group"
               >
                 <MessageSquare className="w-4 h-4" />
-              </Link>
+              </a>
             </div>
           </div>
 
