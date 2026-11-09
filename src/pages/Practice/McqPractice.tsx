@@ -42,9 +42,9 @@ export const McqPractice: React.FC = () => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [startTime, setStartTime] = useState<number>(Date.now());
 
-  // Session state: map questionId -> { selectedOptionId, isCorrect, submitted }
+  // Session state: map questionId -> { selectedOptionId, isCorrect, correctOptionId, explanation }
   const [sessionAnswers, setSessionAnswers] = useState<
-    Record<string, { selectedOptionId: string; isCorrect: boolean }>
+    Record<string, { selectedOptionId: string; isCorrect: boolean; correctOptionId: string; explanation: string }>
   >({});
 
   const [loading, setLoading] = useState(true);
@@ -143,29 +143,27 @@ export const McqPractice: React.FC = () => {
   const handleSubmitAnswer = async () => {
     if (!selectedOption || !currentQuestion || isSubmitted) return;
 
-    const isCorrect = selectedOption === currentQuestion.correctOptionId;
     const timeSpentSeconds = Math.max(1, Math.round((Date.now() - startTime) / 1000));
 
-    // Record attempt
-    if (userProfile) {
-      const attempt: QuestionAttempt = {
-        id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        userId: userProfile.uid,
-        paperId: currentQuestion.paperId,
-        topicId: currentQuestion.topicId,
-        questionId: currentQuestion.id,
-        selectedOptionId: selectedOption,
-        isCorrect,
-        timeSpentSeconds,
-        timestamp: new Date().toISOString(),
-        mode: 'practice',
-      };
-      await dbService.recordQuestionAttempt(attempt);
-    }
+    // Verify and record attempt through dbService (MCQ answer protection)
+    const verification = await dbService.verifyAndRecordQuestionAttempt({
+      userId: userProfile?.uid || 'guest-student',
+      paperId: currentQuestion.paperId,
+      topicId: currentQuestion.topicId,
+      questionId: currentQuestion.id,
+      selectedOptionId: selectedOption,
+      timeSpentSeconds,
+      mode: 'practice',
+    });
 
     setSessionAnswers((prev) => ({
       ...prev,
-      [currentQuestion.id]: { selectedOptionId: selectedOption, isCorrect },
+      [currentQuestion.id]: {
+        selectedOptionId: selectedOption,
+        isCorrect: verification.isCorrect,
+        correctOptionId: verification.correctOptionId,
+        explanation: verification.explanation,
+      },
     }));
 
     setIsSubmitted(true);
@@ -377,7 +375,9 @@ export const McqPractice: React.FC = () => {
               <div className="space-y-3 pt-2">
                 {currentQuestion.options.map((option) => {
                   const isSelected = selectedOption === option.id;
-                  const isCorrect = option.id === currentQuestion.correctOptionId;
+                  const activeFeedback = sessionAnswers[currentQuestion.id];
+                  const revealedCorrectId = activeFeedback?.correctOptionId || currentQuestion.correctOptionId;
+                  const isCorrect = isSubmitted && Boolean(revealedCorrectId) && option.id === revealedCorrectId;
 
                   let optionStyle =
                     'border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 bg-white text-slate-800';
@@ -436,42 +436,51 @@ export const McqPractice: React.FC = () => {
               </div>
 
               {/* Explanatory Feedback (Revealed after submission) */}
-              {isSubmitted && (
-                <div
-                  className={`p-5 rounded-2xl border transition-all animate-in fade-in space-y-2.5 ${
-                    selectedOption === currentQuestion.correctOptionId
-                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
-                      : 'bg-red-50/80 border-red-200 text-red-950'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-sm">
-                    {selectedOption === currentQuestion.correctOptionId ? (
-                      <>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        <span>Correct Answer (+{currentQuestion.marks} Marks)</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-5 h-5 text-red-600" />
-                        <span>
-                          Incorrect. Correct Option is {currentQuestion.correctOptionId}
-                        </span>
-                      </>
+              {isSubmitted && (() => {
+                const activeFeedback = sessionAnswers[currentQuestion.id];
+                const revealedCorrectId = activeFeedback?.correctOptionId || currentQuestion.correctOptionId;
+                const revealedExplanation = activeFeedback?.explanation || currentQuestion.explanation;
+                const isRight = activeFeedback ? activeFeedback.isCorrect : (selectedOption === revealedCorrectId);
+
+                return (
+                  <div
+                    className={`p-5 rounded-2xl border transition-all animate-in fade-in space-y-2.5 ${
+                      isRight
+                        ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                        : 'bg-red-50/80 border-red-200 text-red-950'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                      {isRight ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                          <span>Correct Answer (+{currentQuestion.marks} Marks)</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-5 h-5 text-red-600" />
+                          <span>
+                            Incorrect. Correct Option is {revealedCorrectId}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {revealedExplanation && (
+                      <div className="text-xs sm:text-sm leading-relaxed pt-1">
+                        <strong className="block font-bold mb-1">Accounting Explanation:</strong>
+                        {revealedExplanation}
+                      </div>
+                    )}
+
+                    {currentQuestion.syllabusReference && (
+                      <div className="text-[11px] font-semibold text-slate-500 pt-2 border-t border-slate-200/60">
+                        Syllabus Guide: {currentQuestion.syllabusReference}
+                      </div>
                     )}
                   </div>
-
-                  <div className="text-xs sm:text-sm leading-relaxed pt-1">
-                    <strong className="block font-bold mb-1">Accounting Explanation:</strong>
-                    {currentQuestion.explanation}
-                  </div>
-
-                  {currentQuestion.syllabusReference && (
-                    <div className="text-[11px] font-semibold text-slate-500 pt-2 border-t border-slate-200/60">
-                      Syllabus Guide: {currentQuestion.syllabusReference}
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })()}
 
               {/* Bottom Action Bar */}
               <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">

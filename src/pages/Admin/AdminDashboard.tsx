@@ -111,7 +111,7 @@ export const AdminDashboard: React.FC = () => {
       dbService.getAllUsers(),
       dbService.getPapers(),
       dbService.getTopics(selectedPaperId),
-      dbService.getQuestions(),
+      dbService.getQuestions(undefined, undefined, true),
       dbService.getMockExams(),
       dbService.getResources(),
       dbService.getAnnouncements(),

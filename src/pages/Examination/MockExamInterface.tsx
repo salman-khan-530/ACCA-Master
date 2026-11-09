@@ -138,43 +138,23 @@ export const MockExamInterface: React.FC = () => {
 
       const timeSpentSeconds = Math.max(1, Math.round((Date.now() - startTime) / 1000));
 
-      // Calculate score securely
-      let obtainedMarks = 0;
-      let totalExamMarks = 0;
-
-      questions.forEach((q) => {
-        const studentAns = answers[q.id];
-        totalExamMarks += q.marks;
-        if (studentAns && studentAns === q.correctOptionId) {
-          obtainedMarks += q.marks;
-        }
-      });
-
-      const percentage =
-        totalExamMarks > 0 ? Math.round((obtainedMarks / totalExamMarks) * 100) : 0;
-      const isPassed = percentage >= mockExam.passPercentage;
-
-      const attemptRecord: ExamAttempt = {
+      // Calculate score and submit attempt securely through dbService
+      await dbService.scoreAndRecordExamAttempt({
         id: examAttemptId,
         userId: userProfile?.uid || 'guest-student',
         mockExamId: mockExam.id,
         paperId: mockExam.paperId,
         examTitle: mockExam.title,
         startedAt: new Date(startTime).toISOString(),
-        submittedAt: new Date().toISOString(),
         durationMinutes: mockExam.durationMinutes,
         timeSpentSeconds,
         totalQuestions: questions.length,
-        totalMarks: totalExamMarks,
-        obtainedMarks,
-        percentage,
-        isPassed,
+        passPercentage: mockExam.passPercentage,
         answers,
         markedForReview,
         status: isAutoSubmit ? 'timed_out' : 'submitted',
-      };
+      });
 
-      await dbService.recordExamAttempt(attemptRecord);
       navigate(`/exams/results/${examAttemptId}`, { replace: true });
     } catch (err) {
       console.error('Error submitting exam attempt:', err);

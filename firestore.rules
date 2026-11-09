@@ -14,21 +14,23 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.admin == true ||
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
-    // USERS COLLECTION
+    // ==============================================================================
+    // 1. USER PROFILE PRIVACY
+    // ==============================================================================
     match /users/{userId} {
-      // Anyone can read active profiles for leaderboard, owners and admins can read full doc
-      allow read: if isAuthenticated();
+      // Students can ONLY read their own profile; admins can read all profiles
+      allow read: if isOwner(userId) || isAdmin();
       
       // Creating account: cannot self-assign role = 'admin'
       allow create: if isAuthenticated() && request.auth.uid == userId &&
                     request.resource.data.role == 'student';
                     
-      // Updates: regular user cannot alter their role or status; admins can update all
+      // Updates: regular users cannot alter their role or status; admins can update all
       allow update: if isAdmin() || (
         isOwner(userId) &&
         request.resource.data.role == resource.data.role &&
@@ -38,21 +40,34 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ACCA PAPERS
+    // ACCA PAPERS (Public catalog)
     match /papers/{paperId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // TOPICS
+    // TOPICS (Public syllabus topics)
     match /topics/{topicId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // QUESTIONS
+    // ==============================================================================
+    // 2. MCQ QUESTION & ANSWER PROTECTION
+    // ==============================================================================
+    // Public question information (text, options, difficulty, marks) - NO correct answer or explanation
     match /questions/{questionId} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Private answer information (correctOptionId, explanation)
+    // Only accessible by administrators OR an authenticated student who has recorded an attempt for that question
+    match /question_answers/{questionId} {
+      allow read: if isAdmin() || (
+        isAuthenticated() &&
+        exists(/databases/$(database)/documents/question_attempts/$(request.auth.uid + '_' + questionId))
+      );
       allow write: if isAdmin();
     }
 
@@ -77,21 +92,31 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    // MOCK EXAMS
+    // MOCK EXAMS (Exam syllabus configuration)
     match /mock_exams/{mockId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // EXAM ATTEMPTS
+    // ==============================================================================
+    // 3. EXAM ATTEMPT PROTECTION
+    // ==============================================================================
     match /exam_attempts/{attemptId} {
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid || isAdmin()
       );
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || isAdmin()
+      
+      // Updates permitted during in-progress autosaving, but FROZEN once submitted or timed out!
+      // Students cannot modify an already submitted attempt or touch another student's attempt.
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid &&
+        resource.data.status != 'submitted' &&
+        resource.data.status != 'timed_out'
       );
+      
       allow delete: if isAdmin();
     }
 

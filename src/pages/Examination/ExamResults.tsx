@@ -35,7 +35,7 @@ export const ExamResults: React.FC = () => {
 
         const [p, qList] = await Promise.all([
           dbService.getPaperById(att.paperId),
-          dbService.getQuestions(att.paperId),
+          dbService.getQuestionsForReview(att.paperId, att.id),
         ]);
         setPaper(p || null);
         setQuestions(qList);

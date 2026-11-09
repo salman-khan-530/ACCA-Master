@@ -432,18 +432,59 @@ export const dbService = {
   },
 
   // --- QUESTIONS ---
-  async getQuestions(paperId?: string, topicId?: string): Promise<Question[]> {
+  async getQuestions(
+    paperId?: string,
+    topicId?: string,
+    includeAnswers: boolean = false
+  ): Promise<Question[]> {
     if (isFirebaseConfigured() && firestore) {
       try {
         let q = collection(firestore, 'questions') as any;
         if (paperId && topicId) {
-          q = query(collection(firestore, 'questions'), where('paperId', '==', paperId), where('topicId', '==', topicId));
+          q = query(
+            collection(firestore, 'questions'),
+            where('paperId', '==', paperId),
+            where('topicId', '==', topicId)
+          );
         } else if (paperId) {
           q = query(collection(firestore, 'questions'), where('paperId', '==', paperId));
         }
         const snap = await getDocs(q);
         if (!snap.empty) {
-          return snap.docs.map((d) => d.data() as Question);
+          const publicQuestions = snap.docs.map((d) => {
+            const data = d.data() as Question;
+            // Ensure answers are strictly sanitized unless admin request
+            if (!includeAnswers) {
+              return {
+                ...data,
+                correctOptionId: '',
+                explanation: '',
+              };
+            }
+            return data;
+          });
+
+          // If admin requested full answer data, merge from question_answers collection
+          if (includeAnswers) {
+            const answerSnaps = await getDocs(collection(firestore, 'question_answers'));
+            const answerMap = new Map<string, { correctOptionId: string; explanation: string }>();
+            answerSnaps.forEach((docSnap) => {
+              const ansData = docSnap.data();
+              answerMap.set(docSnap.id, {
+                correctOptionId: ansData.correctOptionId || '',
+                explanation: ansData.explanation || '',
+              });
+            });
+
+            return publicQuestions.map((pq) => {
+              const ans = answerMap.get(pq.id);
+              return ans
+                ? { ...pq, correctOptionId: ans.correctOptionId, explanation: ans.explanation }
+                : pq;
+            });
+          }
+
+          return publicQuestions;
         }
       } catch (err) {
         console.warn('Firestore getQuestions fallback:', err);
@@ -457,18 +498,36 @@ export const dbService = {
     if (topicId) {
       questions = questions.filter((q) => q.topicId.toLowerCase() === topicId.toLowerCase());
     }
+
+    if (!includeAnswers) {
+      // In student practice/exam mode, strip out correct answer keys from question list
+      return questions.map((q) => ({
+        ...q,
+        correctOptionId: '',
+        explanation: '',
+      }));
+    }
+
     return questions;
   },
 
-  async getQuestionById(id: string): Promise<Question | undefined> {
-    const questions = await this.getQuestions();
+  async getQuestionById(id: string, includeAnswers: boolean = false): Promise<Question | undefined> {
+    const questions = await this.getQuestions(undefined, undefined, includeAnswers);
     return questions.find((q) => q.id === id);
   },
 
   async addQuestion(question: Question): Promise<void> {
     if (isFirebaseConfigured() && firestore) {
       try {
-        await setDoc(doc(firestore, 'questions', question.id), question);
+        // Separate public question data from private answer data
+        const { correctOptionId, explanation, ...publicData } = question;
+        await setDoc(doc(firestore, 'questions', question.id), publicData);
+        await setDoc(doc(firestore, 'question_answers', question.id), {
+          questionId: question.id,
+          correctOptionId: correctOptionId || 'A',
+          explanation: explanation || '',
+          updatedAt: new Date().toISOString(),
+        });
       } catch (err) {
         console.warn('Firestore addQuestion fallback:', err);
       }
@@ -481,7 +540,20 @@ export const dbService = {
   async updateQuestion(id: string, updates: Partial<Question>): Promise<void> {
     if (isFirebaseConfigured() && firestore) {
       try {
-        await updateDoc(doc(firestore, 'questions', id), updates);
+        const publicUpdates: any = { ...updates };
+        delete publicUpdates.correctOptionId;
+        delete publicUpdates.explanation;
+
+        if (Object.keys(publicUpdates).length > 0) {
+          await updateDoc(doc(firestore, 'questions', id), publicUpdates);
+        }
+
+        if (updates.correctOptionId !== undefined || updates.explanation !== undefined) {
+          const ansUpdates: any = { updatedAt: new Date().toISOString() };
+          if (updates.correctOptionId !== undefined) ansUpdates.correctOptionId = updates.correctOptionId;
+          if (updates.explanation !== undefined) ansUpdates.explanation = updates.explanation;
+          await setDoc(doc(firestore, 'question_answers', id), ansUpdates, { merge: true });
+        }
       } catch (err) {
         console.warn('Firestore updateQuestion fallback:', err);
       }
@@ -497,7 +569,10 @@ export const dbService = {
   async deleteQuestion(id: string): Promise<void> {
     if (isFirebaseConfigured() && firestore) {
       try {
-        await deleteDoc(doc(firestore, 'questions', id));
+        await Promise.all([
+          deleteDoc(doc(firestore, 'questions', id)),
+          deleteDoc(doc(firestore, 'question_answers', id)),
+        ]);
       } catch (err) {
         console.warn('Firestore deleteQuestion fallback:', err);
       }
@@ -513,7 +588,14 @@ export const dbService = {
     if (isFirebaseConfigured() && firestore) {
       for (const q of newQuestions) {
         try {
-          await setDoc(doc(firestore, 'questions', q.id), q);
+          const { correctOptionId, explanation, ...publicData } = q;
+          await setDoc(doc(firestore, 'questions', q.id), publicData);
+          await setDoc(doc(firestore, 'question_answers', q.id), {
+            questionId: q.id,
+            correctOptionId: correctOptionId || 'A',
+            explanation: explanation || '',
+            updatedAt: new Date().toISOString(),
+          });
         } catch (err) {
           console.warn('Firestore batch question import item error:', err);
         }
@@ -533,6 +615,91 @@ export const dbService = {
     }
     setLocal(STORAGE_KEYS.QUESTIONS, questions);
     return addedCount;
+  },
+
+  // --- SECURE MCQ ANSWER VERIFICATION & PRACTICE ATTEMPTS ---
+  async verifyAndRecordQuestionAttempt(input: {
+    userId: string;
+    paperId: string;
+    topicId: string;
+    questionId: string;
+    selectedOptionId: string;
+    timeSpentSeconds: number;
+    mode: 'practice' | 'mock_exam';
+  }): Promise<{ isCorrect: boolean; correctOptionId: string; explanation: string }> {
+    const attemptId = `${input.userId}_${input.questionId}`;
+    let isCorrect = false;
+    let correctOptionId = 'A';
+    let explanation = '';
+
+    // First, locate the authentic correct answer
+    if (isFirebaseConfigured() && firestore) {
+      try {
+        // Record the attempt first to satisfy the exists() security rule
+        const initialAttempt: QuestionAttempt = {
+          id: attemptId,
+          userId: input.userId,
+          paperId: input.paperId,
+          topicId: input.topicId,
+          questionId: input.questionId,
+          selectedOptionId: input.selectedOptionId,
+          isCorrect: false, // will update once evaluated
+          timeSpentSeconds: input.timeSpentSeconds,
+          timestamp: new Date().toISOString(),
+          mode: input.mode,
+        };
+        await setDoc(doc(firestore, 'question_attempts', attemptId), initialAttempt);
+
+        // Fetch answer document (permitted now that question_attempts doc exists)
+        const ansSnap = await getDoc(doc(firestore, 'question_answers', input.questionId));
+        if (ansSnap.exists()) {
+          const ansData = ansSnap.data();
+          correctOptionId = ansData.correctOptionId;
+          explanation = ansData.explanation || '';
+          isCorrect = input.selectedOptionId.toUpperCase() === correctOptionId.toUpperCase();
+
+          // Update attempt with final verified result
+          await updateDoc(doc(firestore, 'question_attempts', attemptId), { isCorrect });
+        }
+      } catch (err) {
+        console.warn('Firestore verifyAndRecordQuestionAttempt fallback:', err);
+      }
+    }
+
+    // Local / fallback matching if offline or not found
+    if (!explanation) {
+      const allLocal = getLocal<Question[]>(STORAGE_KEYS.QUESTIONS, SAMPLE_FA1_QUESTIONS);
+      const matched = allLocal.find((q) => q.id === input.questionId);
+      if (matched) {
+        correctOptionId = matched.correctOptionId;
+        explanation = matched.explanation;
+        isCorrect = input.selectedOptionId.toUpperCase() === correctOptionId.toUpperCase();
+      }
+    }
+
+    // Persist locally for session consistency
+    const attempt: QuestionAttempt = {
+      id: attemptId,
+      userId: input.userId,
+      paperId: input.paperId,
+      topicId: input.topicId,
+      questionId: input.questionId,
+      selectedOptionId: input.selectedOptionId,
+      isCorrect,
+      timeSpentSeconds: input.timeSpentSeconds,
+      timestamp: new Date().toISOString(),
+      mode: input.mode,
+    };
+    const attempts = getLocal<QuestionAttempt[]>(STORAGE_KEYS.QUESTION_ATTEMPTS, []);
+    const existingIdx = attempts.findIndex((a) => a.id === attemptId);
+    if (existingIdx !== -1) {
+      attempts[existingIdx] = attempt;
+    } else {
+      attempts.push(attempt);
+    }
+    setLocal(STORAGE_KEYS.QUESTION_ATTEMPTS, attempts);
+
+    return { isCorrect, correctOptionId, explanation };
   },
 
   // --- QUESTION ATTEMPTS ---
@@ -699,6 +866,62 @@ export const dbService = {
     setLocal(STORAGE_KEYS.EXAM_ATTEMPTS, list);
   },
 
+  async scoreAndRecordExamAttempt(input: {
+    id: string;
+    userId: string;
+    mockExamId: string;
+    paperId: string;
+    examTitle: string;
+    startedAt: string;
+    durationMinutes: number;
+    timeSpentSeconds: number;
+    totalQuestions: number;
+    passPercentage: number;
+    answers: Record<string, string>;
+    markedForReview: string[];
+    status: 'submitted' | 'timed_out';
+  }): Promise<ExamAttempt> {
+    const fullQuestions = await this.getQuestions(input.paperId, undefined, true);
+    const qMap = new Map(fullQuestions.map((q) => [q.id, q]));
+
+    let obtainedMarks = 0;
+    let totalMarks = 0;
+
+    fullQuestions.forEach((q) => {
+      totalMarks += q.marks;
+      const studentAns = input.answers[q.id];
+      if (studentAns && studentAns.toUpperCase() === q.correctOptionId?.toUpperCase()) {
+        obtainedMarks += q.marks;
+      }
+    });
+
+    const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+    const isPassed = percentage >= input.passPercentage;
+
+    const attemptRecord: ExamAttempt = {
+      id: input.id,
+      userId: input.userId,
+      mockExamId: input.mockExamId,
+      paperId: input.paperId,
+      examTitle: input.examTitle,
+      startedAt: input.startedAt,
+      submittedAt: new Date().toISOString(),
+      durationMinutes: input.durationMinutes,
+      timeSpentSeconds: input.timeSpentSeconds,
+      totalQuestions: input.totalQuestions,
+      totalMarks,
+      obtainedMarks,
+      percentage,
+      isPassed,
+      answers: input.answers,
+      markedForReview: input.markedForReview,
+      status: input.status,
+    };
+
+    await this.recordExamAttempt(attemptRecord);
+    return attemptRecord;
+  },
+
   async getUserExamAttempts(userId: string, paperId?: string): Promise<ExamAttempt[]> {
     if (isFirebaseConfigured() && firestore) {
       try {
@@ -723,8 +946,26 @@ export const dbService = {
   },
 
   async getExamAttemptById(attemptId: string): Promise<ExamAttempt | undefined> {
+    if (isFirebaseConfigured() && firestore) {
+      try {
+        const snap = await getDoc(doc(firestore, 'exam_attempts', attemptId));
+        if (snap.exists()) {
+          return snap.data() as ExamAttempt;
+        }
+      } catch (err) {
+        console.warn('Firestore getExamAttemptById fallback:', err);
+      }
+    }
     const list = getLocal<ExamAttempt[]>(STORAGE_KEYS.EXAM_ATTEMPTS, []);
     return list.find((a) => a.id === attemptId);
+  },
+
+  async getQuestionsForReview(paperId: string, attemptId: string): Promise<Question[]> {
+    const attempt = await this.getExamAttemptById(attemptId);
+    if (!attempt || (attempt.status !== 'submitted' && attempt.status !== 'timed_out')) {
+      return this.getQuestions(paperId, undefined, false);
+    }
+    return this.getQuestions(paperId, undefined, true);
   },
 
   // --- LEADERBOARD ---
