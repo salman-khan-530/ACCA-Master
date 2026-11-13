@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { dbService } from '../../services/dbService';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -110,6 +111,14 @@ export const PaperDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Breadcrumbs Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'ACCA Papers', to: '/papers' },
+          { label: `${paper.code} - ${paper.name}` },
+        ]}
+      />
+
       {/* Paper Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-3xl p-6 sm:p-10 text-white shadow-xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">

@@ -212,6 +212,11 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/faq" className="hover:text-blue-400 transition">
+                  Frequently Asked Questions
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="hover:text-blue-400 transition">
                   Contact & Community
                 </Link>
@@ -229,14 +234,17 @@ export const Footer: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between text-slate-500 text-xs gap-4 pt-2">
             <p>&copy; {new Date().getFullYear()} ACCA Master. All rights reserved.</p>
             <div className="flex items-center space-x-6">
-              <Link to="/about" className="hover:text-slate-400 transition">
+              <Link to="/privacy" className="hover:text-slate-400 transition">
                 Privacy Policy
               </Link>
-              <Link to="/about" className="hover:text-slate-400 transition">
+              <Link to="/terms" className="hover:text-slate-400 transition">
                 Terms of Service
               </Link>
+              <Link to="/faq" className="hover:text-slate-400 transition">
+                FAQ & Help
+              </Link>
               <Link to="/contact" className="hover:text-slate-400 transition">
-                Help Center
+                Contact
               </Link>
             </div>
           </div>

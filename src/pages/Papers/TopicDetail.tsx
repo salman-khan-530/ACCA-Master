@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { dbService } from '../../services/dbService';
 import { useAuth } from '../../contexts/AuthContext';
 import { AccaPaper, Topic, QuestionAttempt, Question } from '../../types';
@@ -81,17 +82,13 @@ export const TopicDetail: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <Link to="/papers" className="hover:text-blue-600">
-          Papers
-        </Link>
-        <span>/</span>
-        <Link to={`/papers/${paper.id}`} className="hover:text-blue-600">
-          {paper.code}
-        </Link>
-        <span>/</span>
-        <span className="text-slate-900">{topic.name}</span>
-      </div>
+      <Breadcrumbs
+        items={[
+          { label: 'ACCA Papers', to: '/papers' },
+          { label: paper.code, to: `/papers/${paper.id}` },
+          { label: topic.name },
+        ]}
+      />
 
       {/* Main Topic Header */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">

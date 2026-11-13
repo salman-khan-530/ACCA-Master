@@ -24,6 +24,10 @@ import { ResourcesPage } from './pages/Resources/ResourcesPage';
 import { LeaderboardPage } from './pages/Leaderboard/LeaderboardPage';
 import { AboutPage } from './pages/About/AboutPage';
 import { ContactPage } from './pages/Contact/ContactPage';
+import { FaqPage } from './pages/Faq/FaqPage';
+import { PrivacyPolicyPage } from './pages/Legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from './pages/Legal/TermsOfServicePage';
+import { NotFoundPage } from './pages/NotFound/NotFoundPage';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 
 export function App() {
@@ -54,6 +58,9 @@ export function App() {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/faq" element={<FaqPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/resources" element={<ResourcesPage />} />
 
@@ -109,8 +116,8 @@ export function App() {
                     }
                   />
 
-                  {/* Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  {/* Fallback 404 */}
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Layout>
             }

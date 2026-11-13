@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { useAuth } from '../../contexts/AuthContext';
 import { dbService } from '../../services/dbService';
 import { SavedQuestion, Question, AccaPaper, Topic } from '../../types';
@@ -65,6 +66,14 @@ export const SavedQuestions: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Breadcrumbs Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'Student Dashboard', to: '/dashboard' },
+          { label: 'Saved Practice Questions' },
+        ]}
+      />
+
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

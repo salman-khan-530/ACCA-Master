@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { dbService } from '../../services/dbService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Question, AccaPaper, Topic, QuestionAttempt } from '../../types';
@@ -208,6 +209,15 @@ export const McqPractice: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Breadcrumbs Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'ACCA Papers', to: '/papers' },
+          { label: currentPaper?.code || paperParam.toUpperCase(), to: `/papers/${paperParam}` },
+          { label: 'MCQ Practice Engine' },
+        ]}
+      />
+
       {/* Top Filter Controls Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">

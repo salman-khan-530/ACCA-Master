@@ -27,6 +27,8 @@ import {
   Download,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  X,
   Search,
   Check,
   Shield,
@@ -116,6 +118,12 @@ export const AdminDashboard: React.FC = () => {
   });
 
   const [csvFeedback, setCsvFeedback] = useState<string | null>(null);
+  const [csvPreviewItems, setCsvPreviewItems] = useState<
+    { question: Question; isDuplicateId: boolean; isDuplicateText: boolean }[]
+  >([]);
+  const [showCsvPreviewModal, setShowCsvPreviewModal] = useState(false);
+  const [csvOverwriteDuplicates, setCsvOverwriteDuplicates] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const reloadData = async () => {
     const [uList, pList, tList, qList, mList, rList, aList, sList] = await Promise.all([
@@ -267,7 +275,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // CSV Import Parser
+  // CSV Import Parser with Duplicate Detection
   const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -282,8 +290,8 @@ export const AdminDashboard: React.FC = () => {
           return;
         }
 
-        const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-        const parsedQuestions: Question[] = [];
+        const previewList: { question: Question; isDuplicateId: boolean; isDuplicateText: boolean }[] = [];
+        const seenIds = new Set<string>();
 
         for (let i = 1; i < lines.length; i++) {
           // Basic CSV quote parser
@@ -304,7 +312,7 @@ export const AdminDashboard: React.FC = () => {
             const explanation = clean(row[11]) || 'Standard syllabus accounting rule.';
 
             if (qText && optA) {
-              parsedQuestions.push({
+              const qObj: Question = {
                 id,
                 paperId,
                 topicId,
@@ -321,23 +329,64 @@ export const AdminDashboard: React.FC = () => {
                 marks,
                 isActive: true,
                 createdAt: new Date().toISOString(),
+              };
+
+              const isDuplicateId =
+                questions.some((existing) => existing.id.toLowerCase() === id.toLowerCase()) ||
+                seenIds.has(id.toLowerCase());
+              const isDuplicateText = questions.some(
+                (existing) => existing.text.trim().toLowerCase() === qText.trim().toLowerCase()
+              );
+              seenIds.add(id.toLowerCase());
+
+              previewList.push({
+                question: qObj,
+                isDuplicateId,
+                isDuplicateText,
               });
             }
           }
         }
 
-        if (parsedQuestions.length > 0) {
-          const count = await dbService.importQuestions(parsedQuestions);
-          showToast('success', `Imported ${count} questions successfully from CSV!`);
-          reloadData();
+        if (previewList.length > 0) {
+          setCsvPreviewItems(previewList);
+          setShowCsvPreviewModal(true);
+          setCsvFeedback(null);
         } else {
           setCsvFeedback('Could not parse valid questions. Please verify format.');
         }
       } catch (err: any) {
         setCsvFeedback(`CSV Parsing Error: ${err?.message}`);
+      } finally {
+        e.target.value = '';
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleConfirmCsvImport = async () => {
+    setIsImporting(true);
+    try {
+      const questionsToSave = csvOverwriteDuplicates
+        ? csvPreviewItems.map((p) => p.question)
+        : csvPreviewItems.filter((p) => !p.isDuplicateId).map((p) => p.question);
+
+      if (questionsToSave.length === 0) {
+        showToast('error', 'No new questions to import. Enable "Overwrite existing" to replace duplicates.');
+        setIsImporting(false);
+        return;
+      }
+
+      const count = await dbService.importQuestions(questionsToSave);
+      showToast('success', `Imported ${count} questions successfully!`);
+      setShowCsvPreviewModal(false);
+      setCsvPreviewItems([]);
+      reloadData();
+    } catch (err: any) {
+      showToast('error', `Import failed: ${err?.message}`);
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleCreateMock = async (e: React.FormEvent) => {
@@ -767,7 +816,7 @@ export const AdminDashboard: React.FC = () => {
               >
                 {papers.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.code} – {p.name}
+                    {p.code} â€“ {p.name}
                   </option>
                 ))}
               </select>
@@ -899,7 +948,7 @@ export const AdminDashboard: React.FC = () => {
                       <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-100">
                         {q.difficulty}
                       </span>
-                      <span className="text-slate-400">• {q.marks} Marks</span>
+                      <span className="text-slate-400">â€¢ {q.marks} Marks</span>
                     </div>
 
                     <button
@@ -975,7 +1024,7 @@ export const AdminDashboard: React.FC = () => {
                   <h3 className="font-bold text-slate-900 text-base">{mock.title}</h3>
                   <p className="text-xs text-slate-600">{mock.description}</p>
                   <p className="text-xs text-slate-400">
-                    {mock.totalQuestions} Questions • {mock.durationMinutes} Minutes • Pass Mark:{' '}
+                    {mock.totalQuestions} Questions â€¢ {mock.durationMinutes} Minutes â€¢ Pass Mark:{' '}
                     {mock.passPercentage}%
                   </p>
                 </div>
@@ -1216,7 +1265,7 @@ export const AdminDashboard: React.FC = () => {
                 onClick={() => setShowQuestionModal(false)}
                 className="text-slate-400 hover:text-slate-600 font-bold text-sm"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -1232,7 +1281,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.code} – {p.name}
+                      {p.code} â€“ {p.name}
                     </option>
                   ))}
                 </select>
@@ -1476,7 +1525,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.code} – {p.name}
+                      {p.code} â€“ {p.name}
                     </option>
                   ))}
                 </select>
@@ -1585,6 +1634,178 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CSV IMPORT PREVIEW */}
+      {showCsvPreviewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">CSV Bulk Questions Import Preview</h3>
+                  <p className="text-xs text-slate-500">
+                    Review parsed questions and duplicate checks before writing to database.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCsvPreviewModal(false);
+                  setCsvPreviewItems([]);
+                }}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Metrics & Duplicate Badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="block text-xs font-semibold text-slate-500">Total In CSV</span>
+                <span className="text-xl font-black text-slate-900">{csvPreviewItems.length}</span>
+              </div>
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                <span className="block text-xs font-semibold text-emerald-700">New Questions</span>
+                <span className="text-xl font-black text-emerald-800">
+                  {csvPreviewItems.filter((i) => !i.isDuplicateId).length}
+                </span>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                <span className="block text-xs font-semibold text-amber-700">Duplicate IDs</span>
+                <span className="text-xl font-black text-amber-800">
+                  {csvPreviewItems.filter((i) => i.isDuplicateId).length}
+                </span>
+              </div>
+              <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200">
+                <span className="block text-xs font-semibold text-indigo-700">Content Matches</span>
+                <span className="text-xl font-black text-indigo-800">
+                  {csvPreviewItems.filter((i) => i.isDuplicateText).length}
+                </span>
+              </div>
+            </div>
+
+            {/* Duplicate Notice */}
+            {csvPreviewItems.some((i) => i.isDuplicateId) && (
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">
+                    Duplicate question IDs detected in this import batch!
+                  </p>
+                  <p className="text-amber-800">
+                    Questions with existing IDs will be safely skipped unless you check &quot;Overwrite existing questions&quot; below.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Overwrite Checkbox */}
+            <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={csvOverwriteDuplicates}
+                onChange={(e) => setCsvOverwriteDuplicates(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+              />
+              <span className="font-semibold">
+                Overwrite existing questions in database if question ID matches
+              </span>
+            </label>
+
+            {/* Preview Table */}
+            <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-72 overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 sticky top-0">
+                  <tr>
+                    <th className="p-2.5">Status</th>
+                    <th className="p-2.5">ID / Paper</th>
+                    <th className="p-2.5">Question Text</th>
+                    <th className="p-2.5">Correct Option</th>
+                    <th className="p-2.5">Marks</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {csvPreviewItems.map((item, idx) => (
+                    <tr key={idx} className={item.isDuplicateId ? 'bg-amber-50/40' : 'hover:bg-slate-50/50'}>
+                      <td className="p-2.5">
+                        {item.isDuplicateId ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            <AlertCircle className="w-3 h-3 text-amber-600" /> Duplicate ID
+                          </span>
+                        ) : item.isDuplicateText ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            Similar Text
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <Check className="w-3 h-3 text-emerald-600" /> New
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2.5">
+                        <span className="font-bold text-slate-900 block truncate max-w-[120px]">{item.question.id}</span>
+                        <span className="text-[10px] uppercase font-bold text-blue-600">
+                          {item.question.paperId} &bull; {item.question.topicId}
+                        </span>
+                      </td>
+                      <td className="p-2.5 text-slate-700 max-w-xs truncate" title={item.question.text}>
+                        {item.question.text}
+                      </td>
+                      <td className="p-2.5">
+                        <span className="px-2 py-0.5 rounded-md font-bold bg-blue-100 text-blue-800 text-[11px]">
+                          Option {item.question.correctOptionId}
+                        </span>
+                      </td>
+                      <td className="p-2.5 font-semibold text-slate-600">{item.question.marks}m</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                Ready to import{' '}
+                <strong className="text-slate-800">
+                  {csvOverwriteDuplicates
+                    ? csvPreviewItems.length
+                    : csvPreviewItems.filter((i) => !i.isDuplicateId).length}
+                </strong>{' '}
+                questions
+              </span>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={isImporting}
+                  onClick={() => {
+                    setShowCsvPreviewModal(false);
+                    setCsvPreviewItems([]);
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isImporting}
+                  onClick={handleConfirmCsvImport}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {isImporting ? 'Importing...' : 'Confirm & Save Questions'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

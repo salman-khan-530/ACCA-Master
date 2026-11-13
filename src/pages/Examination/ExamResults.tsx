@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { dbService } from '../../services/dbService';
 import { ExamAttempt, Question, AccaPaper } from '../../types';
 import confetti from 'canvas-confetti';
@@ -116,6 +117,18 @@ export const ExamResults: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Breadcrumbs Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'Timed Mock Exams', to: '/exams' },
+          {
+            label: paper ? `${paper.code} - ${paper.name}` : 'Paper',
+            to: paper ? `/papers/${paper.id}` : '/papers',
+          },
+          { label: 'Exam Diagnostic Results' },
+        ]}
+      />
+
       {/* Result Hero Header */}
       <div
         className={`rounded-3xl p-8 sm:p-12 text-white shadow-xl space-y-6 text-center ${
