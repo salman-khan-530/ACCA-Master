@@ -99,7 +99,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
       >
         {/* Left Sidebar */}
         <aside
-          className={`p-6 space-y-6 text-white shrink-0 ${
+          className={`p-6 flex flex-col gap-6 text-white shrink-0 ${
             isPrintMode ? 'w-[34%]' : 'w-full md:w-[34%] print:w-[34%]'
           }`}
           style={{
@@ -109,7 +109,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           }}
         >
           {/* Photo & Name */}
-          <div className="text-center space-y-3">
+          <div className="text-center flex flex-col gap-3">
             {showPhoto && <div className="flex justify-center">{renderPhoto(isPrintMode ? 'w-28 h-28' : 'w-24 h-24 sm:w-28 sm:h-28')}</div>}
             <div>
               <h1 className="text-xl font-black uppercase tracking-tight text-white leading-tight">
@@ -120,7 +120,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           </div>
 
           {/* Contact Details */}
-          <div className="space-y-2 pt-2 border-t border-white/20 text-[11px]">
+          <div className="flex flex-col gap-2 pt-2 border-t border-white/20 text-[11px]">
             {email && (
               <div className="flex items-center gap-2 text-white/90">
                 <Mail className="w-3.5 h-3.5 shrink-0 text-white/70" />
@@ -154,11 +154,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           </div>
 
           {/* ACCA Status & Papers */}
-          <div className="space-y-2.5 pt-2 border-t border-white/20">
+          <div className="flex flex-col gap-2.5 pt-2 border-t border-white/20">
             <h2 className="text-[11px] font-black uppercase tracking-wider text-white/80 flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5" /> ACCA Status
             </h2>
-            <div className="bg-white/10 backdrop-blur-xs p-2.5 rounded-xl border border-white/15 space-y-1.5">
+            <div className="bg-white/10 backdrop-blur-xs p-2.5 rounded-xl border border-white/15 flex flex-col gap-1.5">
               <p className="font-bold text-white text-xs">{accaStatus}</p>
               {accaRegistrationNumber && (
                 <p className="text-[10px] text-white/80">ACCA Reg ID: {accaRegistrationNumber}</p>
@@ -175,7 +175,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
             {/* Passed Papers Badges */}
             {accaPassedPapers.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] uppercase font-bold text-white/70">
                   Papers Passed ({accaPassedPapers.length}):
                 </span>
@@ -195,7 +195,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
           {/* Key Competencies */}
           {skills.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-white/20">
+            <div className="flex flex-col gap-2 pt-2 border-t border-white/20">
               <h2 className="text-[11px] font-black uppercase tracking-wider text-white/80">
                 Core Competencies
               </h2>
@@ -214,11 +214,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
           {/* Languages */}
           {languages.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t border-white/20 text-[11px]">
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-white/20 text-[11px]">
               <h2 className="text-[11px] font-black uppercase tracking-wider text-white/80 flex items-center gap-1">
                 <Languages className="w-3.5 h-3.5" /> Languages
               </h2>
-              <div className="space-y-1">
+              <div className="flex flex-col gap-1">
                 {languages.map((lang) => (
                   <div key={lang.id} className="flex justify-between text-white/90">
                     <span className="font-semibold">{lang.name}</span>
@@ -230,17 +230,17 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           )}
         </aside>
 
-        {/* Right Main Column */}
-        <main
-          className={`space-y-6 ${
+        {/* Right Main Column - using div to avoid generic tag selectors */}
+        <div
+          className={`flex flex-col gap-6 ${
             isPrintMode ? 'w-[66%] p-8' : 'w-full md:w-[66%] p-8 print:w-[66%]'
           }`}
         >
           {/* Executive Summary */}
           {summary && (
-            <section className="space-y-2">
+            <section className="flex flex-col gap-2">
               <h2
-                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1 flex items-center gap-1.5"
+                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1.5 flex items-center gap-1.5"
                 style={{ color: accentColor, borderColor: accentColor }}
               >
                 <BookOpen className="w-3.5 h-3.5" /> Professional Summary
@@ -251,16 +251,16 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
           {/* Work Experience */}
           {experiences.length > 0 && (
-            <section className="space-y-3">
+            <section className="flex flex-col gap-3">
               <h2
-                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1 flex items-center gap-1.5"
+                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1.5 flex items-center gap-1.5"
                 style={{ color: accentColor, borderColor: accentColor }}
               >
                 <Briefcase className="w-3.5 h-3.5" /> Accounting & Professional Experience
               </h2>
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 {experiences.map((exp) => (
-                  <div key={exp.id} className="space-y-1">
+                  <div key={exp.id} className="flex flex-col gap-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-1">
                       <h3 className="font-bold text-slate-900 text-xs">{exp.role}</h3>
                       <span className="text-[10px] text-slate-500 font-semibold">
@@ -286,16 +286,16 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
           {/* Education */}
           {education.length > 0 && (
-            <section className="space-y-3">
+            <section className="flex flex-col gap-3">
               <h2
-                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1 flex items-center gap-1.5"
+                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1.5 flex items-center gap-1.5"
                 style={{ color: accentColor, borderColor: accentColor }}
               >
                 <GraduationCap className="w-3.5 h-3.5" /> Education & Qualifications
               </h2>
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {education.map((edu) => (
-                  <div key={edu.id} className="space-y-0.5">
+                  <div key={edu.id} className="flex flex-col gap-0.5">
                     <div className="flex flex-wrap items-baseline justify-between gap-1">
                       <h3 className="font-bold text-slate-900 text-xs">{edu.degree}</h3>
                       <span className="text-[10px] text-slate-500 font-semibold">
@@ -317,14 +317,14 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
           {/* Certifications */}
           {certifications.length > 0 && (
-            <section className="space-y-2">
+            <section className="flex flex-col gap-2">
               <h2
-                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1 flex items-center gap-1.5"
+                className="text-xs font-black uppercase tracking-wider border-b-2 pb-1.5 flex items-center gap-1.5"
                 style={{ color: accentColor, borderColor: accentColor }}
               >
                 <FileCheck className="w-3.5 h-3.5" /> Professional Certifications
               </h2>
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 {certifications.map((cert) => (
                   <div key={cert.id} className="flex justify-between items-baseline text-[11px]">
                     <span className="font-bold text-slate-800">{cert.title}</span>
@@ -339,14 +339,14 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
           {/* References */}
           {references.length > 0 && (
-            <section className="space-y-2 pt-2 border-t border-slate-100">
+            <section className="flex flex-col gap-2 pt-2 border-t border-slate-100">
               <h2
-                className="text-xs font-black uppercase tracking-wider border-b pb-1"
+                className="text-xs font-black uppercase tracking-wider border-b pb-1.5"
                 style={{ color: accentColor, borderColor: accentColor }}
               >
                 References
               </h2>
-              <div className="space-y-1 text-[11px] text-slate-600">
+              <div className="flex flex-col gap-1 text-[11px] text-slate-600">
                 {references.map((ref) => (
                   <div key={ref.id} className="flex flex-wrap justify-between">
                     <span className="font-semibold text-slate-800">{ref.name}</span>
@@ -359,7 +359,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
               </div>
             </section>
           )}
-        </main>
+        </div>
       </div>
     );
   }
@@ -369,15 +369,15 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
     return (
       <div
         id={isPrintMode ? 'cv-print-area-active' : 'cv-print-area'}
-        className={`w-full bg-white text-slate-800 text-xs leading-relaxed ${
+        className={`w-full bg-white text-slate-800 text-xs leading-relaxed flex flex-col gap-6 ${
           isPrintMode
-            ? 'w-[210mm] min-h-[297mm] p-8 space-y-6'
-            : 'max-w-[210mm] min-h-[297mm] p-8 sm:p-10 shadow-xl mx-auto space-y-6 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none'
+            ? 'w-[210mm] min-h-[297mm] p-8'
+            : 'max-w-[210mm] min-h-[297mm] p-8 sm:p-10 shadow-xl mx-auto print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none'
         }`}
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
-        {/* Header Banner */}
-        <header className="border-b-2 pb-5 space-y-3" style={{ borderColor: accentColor }}>
+        {/* Header Banner - div used to ensure print immunity */}
+        <div className="border-b-2 pb-5 flex flex-col gap-3" style={{ borderColor: accentColor }}>
           <div
             className={`items-center justify-between gap-4 ${
               isPrintMode
@@ -428,11 +428,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
               </span>
             )}
           </div>
-        </header>
+        </div>
 
         {/* Summary */}
         {summary && (
-          <section className="space-y-1.5">
+          <section className="flex flex-col gap-1.5">
             <h2
               className="text-xs font-black uppercase tracking-wider pb-1 border-b"
               style={{ color: accentColor, borderColor: '#E2E8F0' }}
@@ -445,14 +445,14 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
         {/* ACCA Progress Box */}
         {accaPassedPapers.length > 0 && (
-          <section className="space-y-1.5">
+          <section className="flex flex-col gap-1.5">
             <h2
               className="text-xs font-black uppercase tracking-wider pb-1 border-b"
               style={{ color: accentColor, borderColor: '#E2E8F0' }}
             >
               ACCA Qualification & Examination Track
             </h2>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-[11px]">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-2 text-[11px]">
               <div className="flex flex-wrap justify-between items-center text-slate-700">
                 <span className="font-bold">Completed Papers ({accaPassedPapers.length}/13):</span>
                 {perProgress && <span className="text-[10px] font-semibold text-slate-500">PER: {perProgress}</span>}
@@ -479,16 +479,16 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
         {/* Work Experience */}
         {experiences.length > 0 && (
-          <section className="space-y-3">
+          <section className="flex flex-col gap-3">
             <h2
               className="text-xs font-black uppercase tracking-wider pb-1 border-b"
               style={{ color: accentColor, borderColor: '#E2E8F0' }}
             >
               Professional Experience
             </h2>
-            <div className="space-y-3.5">
+            <div className="flex flex-col gap-3.5">
               {experiences.map((exp) => (
-                <div key={exp.id} className="space-y-1">
+                <div key={exp.id} className="flex flex-col gap-1">
                   <div className="flex justify-between items-baseline">
                     <h3 className="font-bold text-slate-900 text-xs">
                       {exp.role} &bull; <span className="font-medium text-slate-700">{exp.company}</span>
@@ -512,14 +512,14 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
         {/* Education */}
         {education.length > 0 && (
-          <section className="space-y-2.5">
+          <section className="flex flex-col gap-2.5">
             <h2
               className="text-xs font-black uppercase tracking-wider pb-1 border-b"
               style={{ color: accentColor, borderColor: '#E2E8F0' }}
             >
               Education & Academic Credentials
             </h2>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {education.map((edu) => (
                 <div key={edu.id} className="flex justify-between items-start">
                   <div>
@@ -545,7 +545,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           }`}
         >
           {skills.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
                 Key Technical Skills
               </h3>
@@ -560,11 +560,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           )}
 
           {certifications.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
                 Certifications & Diplomas
               </h3>
-              <div className="space-y-1 text-[11px] text-slate-700">
+              <div className="flex flex-col gap-1 text-[11px] text-slate-700">
                 {certifications.map((c) => (
                   <p key={c.id}>
                     <span className="font-semibold">{c.title}</span> – <span className="text-slate-500 text-[10px]">{c.issuer} ({c.year})</span>
@@ -575,12 +575,12 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           )}
         </div>
 
-        {/* References */}
+        {/* References - div used for print immunity */}
         {references.length > 0 && (
-          <footer className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 flex justify-between">
+          <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 flex justify-between">
             <span>References: {references.map((r) => r.name || r.role).join(', ')}</span>
             <span>Available upon request</span>
-          </footer>
+          </div>
         )}
       </div>
     );
@@ -590,10 +590,10 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
   return (
     <div
       id={isPrintMode ? 'cv-print-area-active' : 'cv-print-area'}
-      className={`w-full bg-white text-slate-800 text-xs leading-relaxed ${
+      className={`w-full bg-white text-slate-800 text-xs leading-relaxed flex flex-col gap-6 ${
         isPrintMode
-          ? 'w-[210mm] min-h-[297mm] p-8 space-y-6'
-          : 'max-w-[210mm] min-h-[297mm] p-8 sm:p-10 shadow-xl mx-auto space-y-6 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none'
+          ? 'w-[210mm] min-h-[297mm] p-8'
+          : 'max-w-[210mm] min-h-[297mm] p-8 sm:p-10 shadow-xl mx-auto print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none'
       }`}
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
@@ -607,8 +607,8 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
         }}
       />
 
-      {/* Header */}
-      <header
+      {/* Header - div used for print immunity */}
+      <div
         className={`pb-4 border-b border-slate-200 ${
           isPrintMode
             ? 'flex flex-row items-center justify-between gap-6 text-left'
@@ -644,7 +644,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
         </div>
 
         {showPhoto && renderPhoto(isPrintMode ? 'w-24 h-24' : 'w-24 h-24')}
-      </header>
+      </div>
 
       {/* Contact Bar */}
       <div
@@ -680,7 +680,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
       {/* Summary */}
       {summary && (
-        <section className="space-y-1.5">
+        <section className="flex flex-col gap-1.5">
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" style={{ color: accentColor }} /> Professional Profile
           </h2>
@@ -690,7 +690,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
       {/* ACCA Examinations */}
       {accaPassedPapers.length > 0 && (
-        <section className="space-y-2">
+        <section className="flex flex-col gap-2">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5" style={{ color: accentColor }} /> ACCA Papers Completed ({accaPassedPapers.length})
@@ -713,13 +713,13 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
 
       {/* Experience */}
       {experiences.length > 0 && (
-        <section className="space-y-3">
+        <section className="flex flex-col gap-3">
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
             <Briefcase className="w-3.5 h-3.5" style={{ color: accentColor }} /> Practical Experience
           </h2>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {experiences.map((exp) => (
-              <div key={exp.id} className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 space-y-1">
+              <div key={exp.id} className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex flex-col gap-1">
                 <div className="flex justify-between items-baseline">
                   <h3 className="font-bold text-slate-900 text-xs">{exp.role}</h3>
                   <span className="text-[10px] font-bold text-slate-400">
@@ -745,11 +745,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
       {/* Education & Skills Grid */}
       <div className={isPrintMode ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>
         {education.length > 0 && (
-          <section className="space-y-2">
+          <section className="flex flex-col gap-2">
             <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
               <GraduationCap className="w-3.5 h-3.5" style={{ color: accentColor }} /> Education
             </h2>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {education.map((edu) => (
                 <div key={edu.id} className="text-[11px]">
                   <h3 className="font-bold text-slate-900">{edu.degree}</h3>
@@ -764,7 +764,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
         )}
 
         {skills.length > 0 && (
-          <section className="space-y-2">
+          <section className="flex flex-col gap-2">
             <h2 className="text-xs font-black uppercase tracking-wider text-slate-900">
               Core Competencies
             </h2>
@@ -790,7 +790,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           }`}
         >
           {certifications.length > 0 && (
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <h3 className="font-bold uppercase tracking-wider text-[10px] text-slate-400">
                 Certifications
               </h3>
@@ -803,7 +803,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = fal
           )}
 
           {languages.length > 0 && (
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <h3 className="font-bold uppercase tracking-wider text-[10px] text-slate-400">
                 Languages
               </h3>

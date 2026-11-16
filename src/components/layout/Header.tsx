@@ -43,7 +43,7 @@ export const Header: React.FC = () => {
     }`;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header className="print:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       {/* Top micro-banner for platform status */}
       <div className="bg-slate-900 text-slate-300 text-xs px-4 py-1.5 flex items-center justify-between">
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">

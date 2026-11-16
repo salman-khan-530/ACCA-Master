@@ -64,10 +64,10 @@
     color-adjust: exact !important;
   }
 
-  /* Hide app chrome & screen-only elements */
-  header,
-  footer,
-  nav,
+  /* Hide app chrome & screen-only elements (use precise selectors to avoid hiding CV components) */
+  body > #root > div > header,
+  body > #root > div > footer,
+  nav:not(#cv-print-portal nav),
   .print\:hidden,
   .cv-screen-workspace,
   #cv-toast,
@@ -77,7 +77,7 @@
 
   /* Reset outer container tree */
   #root,
-  main,
+  body > #root > div > main,
   .max-w-7xl,
   .min-h-screen {
     display: block !important;
@@ -114,5 +114,10 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
+  }
+
+  #cv-print-portal section {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

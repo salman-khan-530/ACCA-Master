@@ -22,7 +22,7 @@ export const Footer: React.FC = () => {
   }, []);
 
   return (
-    <footer className="bg-slate-950 text-slate-300 border-t border-slate-800">
+    <footer className="print:hidden bg-slate-950 text-slate-300 border-t border-slate-800">
       {/* Top Banner / Community Callout */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 border-b border-blue-950/50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
