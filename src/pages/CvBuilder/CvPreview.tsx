@@ -26,9 +26,10 @@ const LinkedinIcon: React.FC<{ className?: string; style?: React.CSSProperties }
 
 interface CvPreviewProps {
   profile: CvProfile;
+  isPrintMode?: boolean;
 }
 
-export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
+export const CvPreview: React.FC<CvPreviewProps> = ({ profile, isPrintMode = false }) => {
   const {
     fullName,
     jobTitle,
@@ -88,18 +89,28 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
   if (theme === 'executive') {
     return (
       <div
-        id="cv-print-area"
-        className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 shadow-xl mx-auto flex flex-col md:flex-row print:flex-row print:shadow-none print:m-0 print:w-full print:max-w-none text-xs leading-relaxed"
+        id={isPrintMode ? 'cv-print-area-active' : 'cv-print-area'}
+        className={`w-full bg-white text-slate-800 text-xs leading-relaxed ${
+          isPrintMode
+            ? 'w-[210mm] min-h-[297mm] flex flex-row'
+            : 'max-w-[210mm] min-h-[297mm] shadow-xl mx-auto flex flex-col md:flex-row print:flex-row print:shadow-none print:m-0 print:w-full print:max-w-none'
+        }`}
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
         {/* Left Sidebar */}
         <aside
-          className="w-full md:w-[34%] p-6 space-y-6 text-white shrink-0 print:w-[34%]"
-          style={{ backgroundColor: accentColor }}
+          className={`p-6 space-y-6 text-white shrink-0 ${
+            isPrintMode ? 'w-[34%]' : 'w-full md:w-[34%] print:w-[34%]'
+          }`}
+          style={{
+            backgroundColor: accentColor,
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact',
+          }}
         >
           {/* Photo & Name */}
           <div className="text-center space-y-3">
-            {showPhoto && <div className="flex justify-center">{renderPhoto()}</div>}
+            {showPhoto && <div className="flex justify-center">{renderPhoto(isPrintMode ? 'w-28 h-28' : 'w-24 h-24 sm:w-28 sm:h-28')}</div>}
             <div>
               <h1 className="text-xl font-black uppercase tracking-tight text-white leading-tight">
                 {fullName || 'Your Full Name'}
@@ -220,7 +231,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
         </aside>
 
         {/* Right Main Column */}
-        <main className="w-full md:w-[66%] p-8 space-y-6 print:w-[66%]">
+        <main
+          className={`space-y-6 ${
+            isPrintMode ? 'w-[66%] p-8' : 'w-full md:w-[66%] p-8 print:w-[66%]'
+          }`}
+        >
           {/* Executive Summary */}
           {summary && (
             <section className="space-y-2">
@@ -353,13 +368,23 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
   if (theme === 'classic') {
     return (
       <div
-        id="cv-print-area"
-        className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 p-8 sm:p-10 shadow-xl mx-auto space-y-6 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none text-xs leading-relaxed"
+        id={isPrintMode ? 'cv-print-area-active' : 'cv-print-area'}
+        className={`w-full bg-white text-slate-800 text-xs leading-relaxed ${
+          isPrintMode
+            ? 'w-[210mm] min-h-[297mm] p-8 space-y-6'
+            : 'max-w-[210mm] min-h-[297mm] p-8 sm:p-10 shadow-xl mx-auto space-y-6 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none'
+        }`}
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
         {/* Header Banner */}
         <header className="border-b-2 pb-5 space-y-3" style={{ borderColor: accentColor }}>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div
+            className={`items-center justify-between gap-4 ${
+              isPrintMode
+                ? 'flex flex-row text-left'
+                : 'flex flex-col sm:flex-row text-center sm:text-left'
+            }`}
+          >
             <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-slate-900">
                 {fullName || 'Your Full Name'}
@@ -373,11 +398,15 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
               </div>
             </div>
 
-            {showPhoto && renderPhoto('w-20 h-20 sm:w-24 sm:h-24')}
+            {showPhoto && renderPhoto(isPrintMode ? 'w-24 h-24' : 'w-20 h-20 sm:w-24 sm:h-24')}
           </div>
 
           {/* Contact Bar */}
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-[11px] text-slate-600 pt-1">
+          <div
+            className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600 pt-1 ${
+              isPrintMode ? 'justify-start' : 'justify-center sm:justify-start'
+            }`}
+          >
             {email && (
               <span className="flex items-center gap-1">
                 <Mail className="w-3 h-3 text-slate-400" /> {email}
@@ -510,7 +539,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
         )}
 
         {/* Technical Skills & Certifications */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+        <div
+          className={`gap-6 pt-2 border-t border-slate-100 ${
+            isPrintMode ? 'grid grid-cols-2' : 'grid grid-cols-1 sm:grid-cols-2'
+          }`}
+        >
           {skills.length > 0 && (
             <div className="space-y-1.5">
               <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
@@ -556,24 +589,49 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
   // --- THEME 3: MODERN MINIMALIST (Clean Header + Visual Badges) ---
   return (
     <div
-      id="cv-print-area"
-      className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 p-8 sm:p-10 shadow-xl mx-auto space-y-6 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none text-xs leading-relaxed"
+      id={isPrintMode ? 'cv-print-area-active' : 'cv-print-area'}
+      className={`w-full bg-white text-slate-800 text-xs leading-relaxed ${
+        isPrintMode
+          ? 'w-[210mm] min-h-[297mm] p-8 space-y-6'
+          : 'max-w-[210mm] min-h-[297mm] p-8 sm:p-10 shadow-xl mx-auto space-y-6 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none'
+      }`}
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       {/* Top Accent Strip */}
-      <div className="h-2 w-full rounded-full" style={{ backgroundColor: accentColor }} />
+      <div
+        className="h-2 w-full rounded-full"
+        style={{
+          backgroundColor: accentColor,
+          WebkitPrintColorAdjust: 'exact',
+          printColorAdjust: 'exact',
+        }}
+      />
 
       {/* Header */}
-      <header className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-4 border-b border-slate-200">
-        <div className="space-y-1.5 text-center sm:text-left">
+      <header
+        className={`pb-4 border-b border-slate-200 ${
+          isPrintMode
+            ? 'flex flex-row items-center justify-between gap-6 text-left'
+            : 'flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left'
+        }`}
+      >
+        <div className="space-y-1.5">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             {fullName || 'Your Full Name'}
           </h1>
           <p className="text-sm font-bold text-slate-600">{jobTitle}</p>
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+          <div
+            className={`flex flex-wrap items-center gap-2 pt-1 ${
+              isPrintMode ? 'justify-start' : 'justify-center sm:justify-start'
+            }`}
+          >
             <span
               className="px-2.5 py-0.5 rounded-full text-white font-black text-[10px] shadow-xs"
-              style={{ backgroundColor: accentColor }}
+              style={{
+                backgroundColor: accentColor,
+                WebkitPrintColorAdjust: 'exact',
+                printColorAdjust: 'exact',
+              }}
             >
               {accaStatus}
             </span>
@@ -585,11 +643,15 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
           </div>
         </div>
 
-        {showPhoto && renderPhoto('w-24 h-24')}
+        {showPhoto && renderPhoto(isPrintMode ? 'w-24 h-24' : 'w-24 h-24')}
       </header>
 
       {/* Contact Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-[10px] text-slate-600">
+      <div
+        className={`gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-[10px] text-slate-600 ${
+          isPrintMode ? 'grid grid-cols-4' : 'grid grid-cols-2 sm:grid-cols-4'
+        }`}
+      >
         {email && (
           <div className="flex items-center gap-1.5 truncate">
             <Mail className="w-3.5 h-3.5 shrink-0" style={{ color: accentColor }} />
@@ -681,7 +743,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
       )}
 
       {/* Education & Skills Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={isPrintMode ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>
         {education.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
@@ -722,7 +784,11 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
 
       {/* Certifications & Languages */}
       {(certifications.length > 0 || languages.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 text-[11px]">
+        <div
+          className={`gap-4 pt-2 border-t border-slate-100 text-[11px] ${
+            isPrintMode ? 'grid grid-cols-2' : 'grid grid-cols-1 md:grid-cols-2'
+          }`}
+        >
           {certifications.length > 0 && (
             <div className="space-y-1">
               <h3 className="font-bold uppercase tracking-wider text-[10px] text-slate-400">

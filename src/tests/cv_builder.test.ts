@@ -54,4 +54,19 @@ describe('Professional ACCA CV Maker', () => {
     expect(EMPTY_CV_PROFILE.showPhoto).toBe(true);
     expect(['square', 'circle', 'rounded']).toContain(SAMPLE_CV_PROFILE.photoShape);
   });
+
+  it('supports multiple professional themes with customized accent colors', () => {
+    const validThemes = ['executive', 'classic', 'modern'];
+    expect(validThemes).toContain(SAMPLE_CV_PROFILE.theme);
+    expect(SAMPLE_CV_PROFILE.accentColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
+  });
+
+  it('sanitizes candidate full names for print/PDF export file titles', () => {
+    const sanitizeName = (name: string) =>
+      (name || 'ACCA_Candidate').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    expect(sanitizeName('Alexander Wright')).toBe('Alexander_Wright');
+    expect(sanitizeName('John Doe Jr.')).toBe('John_Doe_Jr_');
+    expect(sanitizeName('')).toBe('ACCA_Candidate');
+  });
 });

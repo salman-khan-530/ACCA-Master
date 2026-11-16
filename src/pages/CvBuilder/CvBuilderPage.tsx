@@ -135,132 +135,20 @@ export const CvBuilderPage: React.FC = () => {
 
   // Print / PDF Export
   const handlePrint = () => {
-    // If user is currently in mobile 'editor' view, switch to 'preview' so CV is mounted
-    if (mobileView === 'editor') {
-      setMobileView('preview');
+    // Set document title so saved PDF default filename is clean and professional
+    const originalTitle = document.title;
+    const cleanName = (cvProfile.fullName || 'ACCA_Candidate')
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '_');
+    document.title = `${cleanName}_CV`;
+
+    try {
+      window.print();
+    } finally {
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1000);
     }
-
-    setTimeout(() => {
-      const cvElement = document.getElementById('cv-print-area');
-      if (!cvElement) {
-        window.print();
-        return;
-      }
-
-      try {
-        // Collect all stylesheets and inline styles from current document
-        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-          .map((el) => el.outerHTML)
-          .join('\n');
-
-        // Create an isolated hidden iframe
-        const existingIframe = document.getElementById('cv-print-iframe');
-        if (existingIframe) {
-          existingIframe.remove();
-        }
-
-        const iframe = document.createElement('iframe');
-        iframe.id = 'cv-print-iframe';
-        iframe.style.position = 'fixed';
-        iframe.style.top = '-9999px';
-        iframe.style.left = '-9999px';
-        iframe.style.width = '210mm';
-        iframe.style.height = '297mm';
-        iframe.style.border = 'none';
-        iframe.style.zIndex = '-9999';
-        document.body.appendChild(iframe);
-
-        const iframeDoc = iframe.contentWindow?.document;
-        if (!iframeDoc) {
-          window.print();
-          return;
-        }
-
-        iframeDoc.open();
-        iframeDoc.write(`
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <title>${cvProfile.fullName ? `${cvProfile.fullName.replace(/\s+/g, '_')}_CV` : 'ACCA_Professional_CV'}</title>
-              ${styles}
-              <style>
-                @page {
-                  size: A4 portrait;
-                  margin: 0;
-                }
-                *, *::before, *::after {
-                  box-sizing: border-box;
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                  color-adjust: exact !important;
-                }
-                html, body {
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  background-color: #ffffff !important;
-                  width: 100% !important;
-                }
-                #cv-print-area {
-                  margin: 0 auto !important;
-                  width: 210mm !important;
-                  max-width: 210mm !important;
-                  min-height: 297mm !important;
-                  box-shadow: none !important;
-                  border: none !important;
-                  display: flex !important;
-                }
-              </style>
-            </head>
-            <body>
-              ${cvElement.outerHTML}
-            </body>
-          </html>
-        `);
-        iframeDoc.close();
-
-        const triggerPrint = () => {
-          try {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-          } catch (e) {
-            console.warn('Iframe print error, falling back to window.print():', e);
-            window.print();
-          } finally {
-            setTimeout(() => {
-              const el = document.getElementById('cv-print-iframe');
-              if (el) el.remove();
-            }, 2500);
-          }
-        };
-
-        // Check if images need loading (e.g. profile photo)
-        const images = iframeDoc.getElementsByTagName('img');
-        if (images.length > 0) {
-          let loaded = 0;
-          const checkDone = () => {
-            loaded++;
-            if (loaded >= images.length) {
-              setTimeout(triggerPrint, 300);
-            }
-          };
-          for (let i = 0; i < images.length; i++) {
-            if (images[i].complete) {
-              checkDone();
-            } else {
-              images[i].onload = checkDone;
-              images[i].onerror = checkDone;
-            }
-          }
-          setTimeout(triggerPrint, 600);
-        } else {
-          setTimeout(triggerPrint, 300);
-        }
-      } catch (err) {
-        console.warn('Isolated print failed, falling back to window.print():', err);
-        window.print();
-      }
-    }, 150);
   };
 
   // Load Sample Profile
@@ -371,17 +259,19 @@ export const CvBuilderPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 print:p-0 print:m-0 print:max-w-none print:w-full">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-3">
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-3 print:hidden">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Breadcrumbs Navigation */}
-      <Breadcrumbs items={[{ label: 'Career Tools', to: '/resources' }, { label: 'ACCA Professional CV Maker' }]} />
+      <div className="print:hidden">
+        <Breadcrumbs items={[{ label: 'Career Tools', to: '/resources' }, { label: 'ACCA Professional CV Maker' }]} />
+      </div>
 
       {/* Top Banner & Action Controls */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 print:hidden">
@@ -448,7 +338,7 @@ export const CvBuilderPage: React.FC = () => {
       </div>
 
       {/* MAIN DUAL-PANE WORKSPACE */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="cv-screen-workspace grid grid-cols-1 lg:grid-cols-12 gap-8 items-start print:hidden">
         {/* LEFT PANE: INTERACTIVE FORM EDITOR */}
         <div
           className={`lg:col-span-6 space-y-6 ${
@@ -1246,9 +1136,8 @@ export const CvBuilderPage: React.FC = () => {
           </div>
 
           {/* Canvas Wrapper with Zoom Scaling */}
-          <div className="overflow-x-auto bg-slate-200/60 p-4 sm:p-6 rounded-3xl border border-slate-300 shadow-inner print:p-0 print:m-0 print:border-none print:bg-transparent print:shadow-none print:overflow-visible">
+          <div className="overflow-x-auto bg-slate-200/60 p-4 sm:p-6 rounded-3xl border border-slate-300 shadow-inner">
             <div
-              className="print:!transform-none"
               style={{
                 transform: `scale(${zoomScale / 100})`,
                 transformOrigin: 'top center',
@@ -1259,6 +1148,11 @@ export const CvBuilderPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* DEDICATED PRINT PORTAL: Active only during window.print() / Save as PDF */}
+      <div id="cv-print-portal" className="hidden print:block" aria-hidden="true">
+        <CvPreview profile={cvProfile} isPrintMode={true} />
       </div>
     </div>
   );
