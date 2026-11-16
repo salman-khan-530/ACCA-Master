@@ -816,7 +816,7 @@ export const AdminDashboard: React.FC = () => {
               >
                 {papers.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.code} â€“ {p.name}
+                    {p.code} – {p.name}
                   </option>
                 ))}
               </select>
@@ -948,7 +948,7 @@ export const AdminDashboard: React.FC = () => {
                       <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-100">
                         {q.difficulty}
                       </span>
-                      <span className="text-slate-400">â€¢ {q.marks} Marks</span>
+                      <span className="text-slate-400">• {q.marks} Marks</span>
                     </div>
 
                     <button
@@ -1024,7 +1024,7 @@ export const AdminDashboard: React.FC = () => {
                   <h3 className="font-bold text-slate-900 text-base">{mock.title}</h3>
                   <p className="text-xs text-slate-600">{mock.description}</p>
                   <p className="text-xs text-slate-400">
-                    {mock.totalQuestions} Questions â€¢ {mock.durationMinutes} Minutes â€¢ Pass Mark:{' '}
+                    {mock.totalQuestions} Questions • {mock.durationMinutes} Minutes • Pass Mark:{' '}
                     {mock.passPercentage}%
                   </p>
                 </div>
@@ -1262,10 +1262,12 @@ export const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-bold text-slate-900">Add New Practice MCQ</h3>
               <button
+                type="button"
                 onClick={() => setShowQuestionModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 rounded-lg transition"
+                aria-label="Close modal"
               >
-                âœ•
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1281,7 +1283,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.code} â€“ {p.name}
+                      {p.code} – {p.name}
                     </option>
                   ))}
                 </select>
@@ -1447,7 +1449,17 @@ export const AdminDashboard: React.FC = () => {
       {showTopicModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Add New Topic</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Add New Topic</h3>
+              <button
+                type="button"
+                onClick={() => setShowTopicModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 rounded-lg transition"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreateTopic} className="space-y-3 text-xs">
               <div>
                 <label className="block font-bold mb-1">Topic Name</label>
@@ -1525,7 +1537,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.code} â€“ {p.name}
+                      {p.code} – {p.name}
                     </option>
                   ))}
                 </select>
@@ -1578,7 +1590,17 @@ export const AdminDashboard: React.FC = () => {
       {showAnnouncementModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Post Announcement</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Post Announcement</h3>
+              <button
+                type="button"
+                onClick={() => setShowAnnouncementModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 rounded-lg transition"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreateAnnouncement} className="space-y-3 text-xs">
               <div>
                 <label className="block font-bold mb-1">Title</label>
