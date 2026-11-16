@@ -135,7 +135,132 @@ export const CvBuilderPage: React.FC = () => {
 
   // Print / PDF Export
   const handlePrint = () => {
-    window.print();
+    // If user is currently in mobile 'editor' view, switch to 'preview' so CV is mounted
+    if (mobileView === 'editor') {
+      setMobileView('preview');
+    }
+
+    setTimeout(() => {
+      const cvElement = document.getElementById('cv-print-area');
+      if (!cvElement) {
+        window.print();
+        return;
+      }
+
+      try {
+        // Collect all stylesheets and inline styles from current document
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+          .map((el) => el.outerHTML)
+          .join('\n');
+
+        // Create an isolated hidden iframe
+        const existingIframe = document.getElementById('cv-print-iframe');
+        if (existingIframe) {
+          existingIframe.remove();
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.id = 'cv-print-iframe';
+        iframe.style.position = 'fixed';
+        iframe.style.top = '-9999px';
+        iframe.style.left = '-9999px';
+        iframe.style.width = '210mm';
+        iframe.style.height = '297mm';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '-9999';
+        document.body.appendChild(iframe);
+
+        const iframeDoc = iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          window.print();
+          return;
+        }
+
+        iframeDoc.open();
+        iframeDoc.write(`
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <title>${cvProfile.fullName ? `${cvProfile.fullName.replace(/\s+/g, '_')}_CV` : 'ACCA_Professional_CV'}</title>
+              ${styles}
+              <style>
+                @page {
+                  size: A4 portrait;
+                  margin: 0;
+                }
+                *, *::before, *::after {
+                  box-sizing: border-box;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                }
+                html, body {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background-color: #ffffff !important;
+                  width: 100% !important;
+                }
+                #cv-print-area {
+                  margin: 0 auto !important;
+                  width: 210mm !important;
+                  max-width: 210mm !important;
+                  min-height: 297mm !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                  display: flex !important;
+                }
+              </style>
+            </head>
+            <body>
+              ${cvElement.outerHTML}
+            </body>
+          </html>
+        `);
+        iframeDoc.close();
+
+        const triggerPrint = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.warn('Iframe print error, falling back to window.print():', e);
+            window.print();
+          } finally {
+            setTimeout(() => {
+              const el = document.getElementById('cv-print-iframe');
+              if (el) el.remove();
+            }, 2500);
+          }
+        };
+
+        // Check if images need loading (e.g. profile photo)
+        const images = iframeDoc.getElementsByTagName('img');
+        if (images.length > 0) {
+          let loaded = 0;
+          const checkDone = () => {
+            loaded++;
+            if (loaded >= images.length) {
+              setTimeout(triggerPrint, 300);
+            }
+          };
+          for (let i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+              checkDone();
+            } else {
+              images[i].onload = checkDone;
+              images[i].onerror = checkDone;
+            }
+          }
+          setTimeout(triggerPrint, 600);
+        } else {
+          setTimeout(triggerPrint, 300);
+        }
+      } catch (err) {
+        console.warn('Isolated print failed, falling back to window.print():', err);
+        window.print();
+      }
+    }, 150);
   };
 
   // Load Sample Profile
@@ -1079,7 +1204,7 @@ export const CvBuilderPage: React.FC = () => {
 
         {/* RIGHT PANE: REAL-TIME LIVE CV CANVAS */}
         <div
-          className={`lg:col-span-6 space-y-4 ${
+          className={`lg:col-span-6 space-y-4 print:!block print:w-full ${
             mobileView === 'editor' ? 'hidden lg:block' : 'block'
           }`}
         >
@@ -1121,8 +1246,9 @@ export const CvBuilderPage: React.FC = () => {
           </div>
 
           {/* Canvas Wrapper with Zoom Scaling */}
-          <div className="overflow-x-auto bg-slate-200/60 p-4 sm:p-6 rounded-3xl border border-slate-300 shadow-inner">
+          <div className="overflow-x-auto bg-slate-200/60 p-4 sm:p-6 rounded-3xl border border-slate-300 shadow-inner print:p-0 print:m-0 print:border-none print:bg-transparent print:shadow-none print:overflow-visible">
             <div
+              className="print:!transform-none"
               style={{
                 transform: `scale(${zoomScale / 100})`,
                 transformOrigin: 'top center',

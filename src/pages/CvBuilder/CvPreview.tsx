@@ -89,7 +89,7 @@ export const CvPreview: React.FC<CvPreviewProps> = ({ profile }) => {
     return (
       <div
         id="cv-print-area"
-        className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 shadow-xl mx-auto flex flex-col md:flex-row print:shadow-none print:m-0 print:w-full print:max-w-none text-xs leading-relaxed"
+        className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-800 shadow-xl mx-auto flex flex-col md:flex-row print:flex-row print:shadow-none print:m-0 print:w-full print:max-w-none text-xs leading-relaxed"
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
         {/* Left Sidebar */}
