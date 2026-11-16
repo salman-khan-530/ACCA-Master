@@ -859,6 +859,19 @@ export const dbService = {
     }
   },
 
+  async deleteMockExam(id: string): Promise<void> {
+    if (isFirebaseConfigured() && firestore) {
+      try {
+        await deleteDoc(doc(firestore, 'mock_exams', id));
+      } catch (err) {
+        console.warn('Firestore deleteMockExam fallback:', err);
+      }
+    }
+    const exams = getLocal<MockExam[]>(STORAGE_KEYS.MOCK_EXAMS, SAMPLE_MOCK_EXAMS);
+    const updated = exams.filter((e) => e.id !== id);
+    setLocal(STORAGE_KEYS.MOCK_EXAMS, updated);
+  },
+
   // --- EXAM ATTEMPTS ---
   async recordExamAttempt(attempt: ExamAttempt): Promise<void> {
     if (isFirebaseConfigured() && firestore) {

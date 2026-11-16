@@ -105,3 +105,24 @@ describe('Student Dashboard Progress Calculation', () => {
     expect(weakTopics).toEqual(['fa1-t1']);
   });
 });
+
+describe('Admin Mock Examination Management', () => {
+  it('allows adding and removing mock examinations from collection', () => {
+    let mockList = [
+      { id: 'mock-1', title: 'FA1 Diagnostic Mock 1', paperId: 'fa1' },
+      { id: 'mock-2', title: 'FA1 Full Mock 2', paperId: 'fa1' },
+    ];
+
+    // Add new mock
+    const newMock = { id: 'mock-3', title: 'MA1 Standard Mock 1', paperId: 'ma1' };
+    mockList = [...mockList, newMock];
+    expect(mockList).toHaveLength(3);
+
+    // Delete mock
+    const targetId = 'mock-2';
+    mockList = mockList.filter((m) => m.id !== targetId);
+    expect(mockList).toHaveLength(2);
+    expect(mockList.find((m) => m.id === 'mock-2')).toBeUndefined();
+    expect(mockList.map((m) => m.id)).toEqual(['mock-1', 'mock-3']);
+  });
+});

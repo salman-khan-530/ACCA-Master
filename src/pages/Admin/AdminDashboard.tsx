@@ -423,6 +423,19 @@ export const AdminDashboard: React.FC = () => {
     reloadData();
   };
 
+  const handleDeleteMockExam = async (mockId: string, mockTitle: string) => {
+    if (window.confirm(`Are you sure you want to permanently delete "${mockTitle}"? This action cannot be undone.`)) {
+      try {
+        await dbService.deleteMockExam(mockId);
+        showToast('success', 'Mock exam deleted successfully.');
+        reloadData();
+      } catch (err) {
+        console.error('Failed to delete mock exam:', err);
+        showToast('error', 'Failed to delete mock exam.');
+      }
+    }
+  };
+
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnnouncement.title || !newAnnouncement.content) return;
@@ -989,48 +1002,87 @@ export const AdminDashboard: React.FC = () => {
       {/* --- TAB: MOCK EXAMS MANAGEMENT --- */}
       {activeTab === 'mocks' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h2 className="text-lg font-bold text-slate-900">Mock Examinations Creator</h2>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Mock Examinations Management</h2>
+              <p className="text-xs text-slate-500">
+                Configure timed CBE mock exams, manage publishing status, or remove obsolete simulations.
+              </p>
+            </div>
             <button
               onClick={() => setShowMockModal(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition"
             >
               <Plus className="w-4 h-4" /> Create Timed Mock
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mockExams.map((mock) => (
-              <div
-                key={mock.id}
-                className="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-3 flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold text-xs uppercase">
-                      {mock.paperId}
-                    </span>
-                    <button
-                      onClick={() => handleToggleMockPublish(mock.id, mock.isPublished)}
-                      className={`text-xs font-bold px-2 py-0.5 rounded-md ${
-                        mock.isPublished
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {mock.isPublished ? 'Published' : 'Draft'}
-                    </button>
+          {mockExams.length === 0 ? (
+            <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
+              <FileText className="w-10 h-10 text-slate-400 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-800">No Mock Examinations Found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No mock exams are currently configured. Click "Create Timed Mock" above to build a new CBE examination simulation.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {mockExams.map((mock) => (
+                <div
+                  key={mock.id}
+                  className="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-4 flex flex-col justify-between hover:shadow-xs transition"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-extrabold text-xs uppercase tracking-wide">
+                        {mock.paperId}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleMockPublish(mock.id, mock.isPublished)}
+                          className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${
+                            mock.isPublished
+                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                          }`}
+                          title={mock.isPublished ? 'Click to unpublish (draft)' : 'Click to publish'}
+                        >
+                          {mock.isPublished ? 'Published' : 'Draft'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMockExam(mock.id, mock.title)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Delete Mock Exam"
+                          aria-label={`Delete mock exam ${mock.title}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base">{mock.title}</h3>
+                      {mock.description && (
+                        <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{mock.description}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-500 font-medium border-t border-slate-200/60">
+                      <span className="flex items-center gap-1">
+                        <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                        {mock.totalQuestions} Questions
+                      </span>
+                      <span>&bull;</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {mock.durationMinutes} Minutes
+                      </span>
+                      <span>&bull;</span>
+                      <span>Pass Mark: {mock.passPercentage}%</span>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-base">{mock.title}</h3>
-                  <p className="text-xs text-slate-600">{mock.description}</p>
-                  <p className="text-xs text-slate-400">
-                    {mock.totalQuestions} Questions • {mock.durationMinutes} Minutes • Pass Mark:{' '}
-                    {mock.passPercentage}%
-                  </p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
