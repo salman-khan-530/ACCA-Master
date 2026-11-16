@@ -182,3 +182,73 @@ export interface PlatformSettings {
   telegramGroupUrl?: string;
   updatedAt?: string;
 }
+
+export interface CvEducation {
+  id: string;
+  degree: string;
+  institution: string;
+  location: string;
+  startYear: string;
+  endYear: string;
+  grade?: string;
+  details?: string;
+}
+
+export interface CvExperience {
+  id: string;
+  role: string;
+  company: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  bulletPoints: string[];
+}
+
+export interface CvLanguage {
+  id: string;
+  name: string;
+  proficiency: 'Native' | 'Fluent' | 'Professional Working' | 'Intermediate' | 'Basic';
+}
+
+export interface CvCertification {
+  id: string;
+  title: string;
+  issuer: string;
+  year: string;
+}
+
+export interface CvReference {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  emailOrPhone: string;
+}
+
+export interface CvProfile {
+  fullName: string;
+  jobTitle: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedinUrl?: string;
+  websiteUrl?: string;
+  photoUrl?: string;
+  showPhoto: boolean;
+  photoShape: 'square' | 'circle' | 'rounded';
+  summary: string;
+  accaStatus: string;
+  accaRegistrationNumber?: string;
+  accaPassedPapers: string[];
+  epsmCompleted: boolean;
+  perProgress?: string;
+  skills: string[];
+  experiences: CvExperience[];
+  education: CvEducation[];
+  certifications: CvCertification[];
+  languages: CvLanguage[];
+  references: CvReference[];
+  theme: 'executive' | 'classic' | 'modern';
+  accentColor: string;
+}

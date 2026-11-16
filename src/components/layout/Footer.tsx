@@ -197,6 +197,11 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/cv-builder" className="hover:text-blue-400 transition font-medium text-emerald-400">
+                  ACCA CV / Resume Maker
+                </Link>
+              </li>
+              <li>
                 <Link to="/resources?category=examiner_reports" className="hover:text-blue-400 transition">
                   Examiner Insights & Reports
                 </Link>

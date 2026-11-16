@@ -27,6 +27,7 @@ import { ContactPage } from './pages/Contact/ContactPage';
 import { FaqPage } from './pages/Faq/FaqPage';
 import { PrivacyPolicyPage } from './pages/Legal/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/Legal/TermsOfServicePage';
+import { CvBuilderPage } from './pages/CvBuilder/CvBuilderPage';
 import { NotFoundPage } from './pages/NotFound/NotFoundPage';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 
@@ -63,6 +64,8 @@ export function App() {
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/resources" element={<ResourcesPage />} />
+                  <Route path="/cv-builder" element={<CvBuilderPage />} />
+                  <Route path="/resume-builder" element={<CvBuilderPage />} />
 
                   {/* Syllabus & Practice routes */}
                   <Route path="/papers" element={<PapersList />} />

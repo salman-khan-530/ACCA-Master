@@ -13,6 +13,7 @@ import {
   Database,
   Cloud,
   ChevronDown,
+  FileText,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -103,6 +104,9 @@ export const Header: React.FC = () => {
             <NavLink to="/resources" className={navLinkClass}>
               Study Resources
             </NavLink>
+            <NavLink to="/cv-builder" className={navLinkClass}>
+              CV Maker
+            </NavLink>
             <NavLink to="/resources?category=examiner_reports" className={navLinkClass}>
               Examiner Reports
             </NavLink>
@@ -168,6 +172,15 @@ export const Header: React.FC = () => {
                     >
                       <Bookmark className="w-4 h-4 text-slate-400" />
                       Saved Questions
+                    </Link>
+
+                    <Link
+                      to="/cv-builder"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 font-medium"
+                    >
+                      <FileText className="w-4 h-4 text-slate-400" />
+                      ACCA CV Maker
                     </Link>
 
                     <Link
@@ -251,6 +264,9 @@ export const Header: React.FC = () => {
           </NavLink>
           <NavLink to="/resources" onClick={() => setMobileMenuOpen(false)} className={mobileNavLinkClass}>
             Study Resources
+          </NavLink>
+          <NavLink to="/cv-builder" onClick={() => setMobileMenuOpen(false)} className={mobileNavLinkClass}>
+            ACCA CV Maker
           </NavLink>
           <NavLink to="/resources?category=examiner_reports" onClick={() => setMobileMenuOpen(false)} className={mobileNavLinkClass}>
             Examiner Reports

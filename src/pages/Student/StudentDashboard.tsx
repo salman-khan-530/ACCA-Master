@@ -153,6 +153,12 @@ export const StudentDashboard: React.FC = () => {
           >
             <Clock className="w-4 h-4" /> Launch Timed Mock
           </Link>
+          <Link
+            to="/cv-builder"
+            className="px-4 py-2.5 bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold text-sm rounded-xl transition flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" /> Build My CV
+          </Link>
         </div>
       </div>
 
