@@ -10,6 +10,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
   updateProfile as fbUpdateProfile,
+  updatePassword as fbUpdatePassword,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -24,6 +25,7 @@ interface AuthContextType {
   register: (name: string, email: string, pass: string, selectedPapers?: string[]) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updateAccountPassword: (newPassword: string) => Promise<void>;
   updateProfileDetails: (updates: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -186,6 +188,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateAccountPassword = async (newPassword: string): Promise<void> => {
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+    if (isFirebaseConfigured() && auth && auth.currentUser) {
+      await fbUpdatePassword(auth.currentUser, newPassword);
+    } else {
+      // In local offline mode, simulation
+      return;
+    }
+  };
+
   const updateProfileDetails = async (updates: Partial<UserProfile>): Promise<void> => {
     if (!userProfile) return;
     // Security check: non-admin users cannot promote themselves
@@ -216,6 +230,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         resetPassword,
+        updateAccountPassword,
         updateProfileDetails,
       }}
     >

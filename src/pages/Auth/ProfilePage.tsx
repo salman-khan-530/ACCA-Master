@@ -10,11 +10,13 @@ import {
   AlertCircle,
   Calendar,
   ArrowRight,
+  Lock,
+  Key,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ProfilePage: React.FC = () => {
-  const { userProfile, updateProfileDetails, isAdmin } = useAuth();
+  const { userProfile, updateProfileDetails, updateAccountPassword, isAdmin } = useAuth();
 
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [selectedPapers, setSelectedPapers] = useState<string[]>(
@@ -27,6 +29,13 @@ export const ProfilePage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Password management state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   if (!userProfile) return null;
 
@@ -58,6 +67,36 @@ export const ProfilePage: React.FC = () => {
       setError(err?.message || 'Failed to update profile settings.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordSuccess(null);
+    setPasswordError(null);
+
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match. Please re-enter.');
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      await updateAccountPassword(newPassword);
+      setPasswordSuccess('Password successfully updated!');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPasswordError(
+        err?.message || 'Failed to update password. You may need to sign out and log back in before updating security credentials.'
+      );
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -256,6 +295,78 @@ export const ProfilePage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Security & Password Card */}
+      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+          <Key className="w-5 h-5 text-blue-600" />
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Security & Password Management</h3>
+            <p className="text-xs text-slate-500">Update your account login password safely.</p>
+          </div>
+        </div>
+
+        {passwordSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{passwordSuccess}</span>
+          </div>
+        )}
+
+        {passwordError && (
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+            <span>{passwordError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              New Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              Confirm New Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={updatingPassword}
+            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition disabled:opacity-50"
+          >
+            <Key className="w-3.5 h-3.5" />
+            {updatingPassword ? 'Updating Password...' : 'Update Password'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
