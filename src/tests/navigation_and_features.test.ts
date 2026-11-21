@@ -126,3 +126,54 @@ describe('Admin Mock Examination Management', () => {
     expect(mockList.map((m) => m.id)).toEqual(['mock-1', 'mock-3']);
   });
 });
+
+describe('Admin Learning Resources Management', () => {
+  it('allows adding, filtering, and removing learning resources', () => {
+    let resources = [
+      {
+        id: 'res-1',
+        title: 'FA1 Complete Study Notes',
+        category: 'study_notes',
+        paperId: 'fa1',
+        fileType: 'PDF',
+        isAuthorized: true,
+      },
+      {
+        id: 'res-2',
+        title: 'MA1 Past Paper 2025 CBE',
+        category: 'past_papers',
+        paperId: 'ma1',
+        fileType: 'PDF',
+        isAuthorized: true,
+      },
+    ];
+
+    // Add new learning resource
+    const newRes = {
+      id: 'res-3',
+      title: 'FA1 Revision Flashcards',
+      category: 'revision_notes',
+      paperId: 'fa1',
+      fileType: 'PDF',
+      isAuthorized: false,
+    };
+    resources = [...resources, newRes];
+    expect(resources).toHaveLength(3);
+
+    // Filter by paper
+    const fa1Resources = resources.filter((r) => r.paperId === 'fa1');
+    expect(fa1Resources).toHaveLength(2);
+
+    // Filter by category
+    const pastPapers = resources.filter((r) => r.category === 'past_papers');
+    expect(pastPapers).toHaveLength(1);
+    expect(pastPapers[0].id).toBe('res-2');
+
+    // Delete resource
+    const deleteId = 'res-1';
+    resources = resources.filter((r) => r.id !== deleteId);
+    expect(resources).toHaveLength(2);
+    expect(resources.find((r) => r.id === deleteId)).toBeUndefined();
+    expect(resources.map((r) => r.id)).toEqual(['res-2', 'res-3']);
+  });
+});

@@ -95,7 +95,7 @@ export const LeaderboardPage: React.FC = () => {
             <option value="all">All ACCA Papers</option>
             {papers.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.code} – {p.name}
+                {p.code} - {p.name}
               </option>
             ))}
           </select>

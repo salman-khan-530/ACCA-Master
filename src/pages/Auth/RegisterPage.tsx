@@ -156,7 +156,7 @@ export const RegisterPage: React.FC = () => {
             >
               {ACCA_PAPERS.map((paper) => (
                 <option key={paper.id} value={paper.id}>
-                  {paper.code} – {paper.name}
+                  {paper.code} - {paper.name}
                 </option>
               ))}
             </select>

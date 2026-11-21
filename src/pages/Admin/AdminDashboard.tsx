@@ -8,6 +8,7 @@ import {
   Question,
   MockExam,
   LearningResource,
+  ResourceCategory,
   Announcement,
   PlatformSettings,
 } from '../../types';
@@ -44,6 +45,7 @@ import {
   Phone,
   Mail,
   Save,
+  ExternalLink,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -115,6 +117,36 @@ export const AdminDashboard: React.FC = () => {
     title: '',
     content: '',
     priority: 'normal' as 'normal' | 'important' | 'urgent',
+  });
+
+  const [showResourceModal, setShowResourceModal] = useState(false);
+  const [resourceFilterPaper, setResourceFilterPaper] = useState('all');
+  const [resourceFilterCategory, setResourceFilterCategory] = useState('all');
+  const [resourceSearch, setResourceSearch] = useState('');
+  const [newResource, setNewResource] = useState<{
+    title: string;
+    category: ResourceCategory;
+    paperId: string;
+    topicId: string;
+    description: string;
+    fileUrl: string;
+    externalUrl: string;
+    authorOrPublisher: string;
+    fileType: string;
+    fileSize: string;
+    isAuthorized: boolean;
+  }>({
+    title: '',
+    category: 'study_notes',
+    paperId: 'fa1',
+    topicId: '',
+    description: '',
+    fileUrl: '',
+    externalUrl: '',
+    authorOrPublisher: 'ACCA Master Faculty',
+    fileType: 'PDF',
+    fileSize: '',
+    isAuthorized: true,
   });
 
   const [csvFeedback, setCsvFeedback] = useState<string | null>(null);
@@ -456,6 +488,66 @@ export const AdminDashboard: React.FC = () => {
     reloadData();
   };
 
+  const handleCreateResource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newResource.title.trim()) {
+      showToast('error', 'Please enter a resource title.');
+      return;
+    }
+
+    const resourceObj: LearningResource = {
+      id: `${newResource.paperId}-${newResource.category}-${Date.now().toString(36)}`,
+      title: newResource.title.trim(),
+      category: newResource.category,
+      paperId: newResource.paperId,
+      topicId: newResource.topicId || undefined,
+      description: newResource.description.trim() || 'Comprehensive ACCA examination preparation resource.',
+      fileUrl: newResource.fileUrl.trim() || undefined,
+      externalUrl: newResource.externalUrl.trim() || undefined,
+      authorOrPublisher: newResource.authorOrPublisher.trim() || 'ACCA Master Faculty',
+      fileType: newResource.fileType || 'PDF',
+      fileSize: newResource.fileSize.trim() || undefined,
+      isAuthorized: newResource.isAuthorized,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await dbService.addResource(resourceObj);
+      setShowResourceModal(false);
+      setNewResource({
+        title: '',
+        category: 'study_notes',
+        paperId: 'fa1',
+        topicId: '',
+        description: '',
+        fileUrl: '',
+        externalUrl: '',
+        authorOrPublisher: 'ACCA Master Faculty',
+        fileType: 'PDF',
+        fileSize: '',
+        isAuthorized: true,
+      });
+      showToast('success', 'New learning resource added successfully!');
+      reloadData();
+    } catch (err) {
+      console.error('Failed to create resource:', err);
+      showToast('error', 'Failed to add learning resource.');
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: string, resourceTitle: string) => {
+    if (window.confirm(`Are you sure you want to permanently delete "${resourceTitle}"? This action cannot be undone.`)) {
+      try {
+        await dbService.deleteResource(resourceId);
+        showToast('success', 'Resource deleted successfully.');
+        reloadData();
+      } catch (err) {
+        console.error('Failed to delete resource:', err);
+        showToast('error', 'Failed to delete resource.');
+      }
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Toast Notification */}
@@ -660,6 +752,17 @@ export const AdminDashboard: React.FC = () => {
                   <p className="font-bold text-xs">Post Announcement</p>
                   <p className="text-[11px] text-slate-500">Notice to all candidates</p>
                 </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('resources');
+                    setShowResourceModal(true);
+                  }}
+                  className="p-4 bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-700 rounded-2xl border border-slate-200 text-left transition col-span-2"
+                >
+                  <BookOpen className="w-5 h-5 mb-1 text-indigo-600" />
+                  <p className="font-bold text-xs">Upload Learning Resource</p>
+                  <p className="text-[11px] text-slate-500">Add notes, past exam papers, revision guides & textbooks</p>
+                </button>
               </div>
             </div>
 
@@ -829,7 +932,7 @@ export const AdminDashboard: React.FC = () => {
               >
                 {papers.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.code} – {p.name}
+                    {p.code} - {p.name}
                   </option>
                 ))}
               </select>
@@ -961,7 +1064,7 @@ export const AdminDashboard: React.FC = () => {
                       <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-100">
                         {q.difficulty}
                       </span>
-                      <span className="text-slate-400">• {q.marks} Marks</span>
+                      <span className="text-slate-400">&bull; {q.marks} Marks</span>
                     </div>
 
                     <button
@@ -1081,6 +1184,166 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* --- TAB: LEARNING RESOURCES MANAGEMENT --- */}
+      {activeTab === 'resources' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Learning Resources Management</h2>
+              <p className="text-xs text-slate-500">
+                Manage downloadable study notes, revision guides, past exam papers, examiner reports, and external syllabus hubs.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowResourceModal(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition"
+            >
+              <Plus className="w-4 h-4" /> Add New Resource
+            </button>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search resources by title, author, description..."
+                value={resourceSearch}
+                onChange={(e) => setResourceSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <select
+                value={resourceFilterPaper}
+                onChange={(e) => setResourceFilterPaper(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+              >
+                <option value="all">All ACCA Papers ({resources.length})</option>
+                {papers.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} - {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={resourceFilterCategory}
+                onChange={(e) => setResourceFilterCategory(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+              >
+                <option value="all">All Resource Types</option>
+                <option value="study_notes">Study Notes</option>
+                <option value="revision_notes">Revision Notes & Flashcards</option>
+                <option value="past_papers">Past Exam Papers & CBE Practice</option>
+                <option value="books">Books & Textbooks</option>
+                <option value="examiner_reports">Examiner Reports & Articles</option>
+                <option value="video_resources">Video Lectures & Walkthroughs</option>
+                <option value="external_links">Official External Links</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Resources List / Grid */}
+          {resources
+            .filter((res) => {
+              const matchesPaper =
+                resourceFilterPaper === 'all' || res.paperId.toLowerCase() === resourceFilterPaper.toLowerCase();
+              const matchesCategory =
+                resourceFilterCategory === 'all' || res.category === resourceFilterCategory;
+              const matchesSearch =
+                !resourceSearch.trim() ||
+                res.title.toLowerCase().includes(resourceSearch.toLowerCase()) ||
+                res.description.toLowerCase().includes(resourceSearch.toLowerCase()) ||
+                (res.authorOrPublisher && res.authorOrPublisher.toLowerCase().includes(resourceSearch.toLowerCase()));
+              return matchesPaper && matchesCategory && matchesSearch;
+            })
+            .length === 0 ? (
+            <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
+              <BookOpen className="w-10 h-10 text-slate-400 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-800">No Learning Resources Found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No resources match your active search or filters. Click "Add New Resource" to upload study notes, past papers, or syllabus guides.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {resources
+                .filter((res) => {
+                  const matchesPaper =
+                    resourceFilterPaper === 'all' || res.paperId.toLowerCase() === resourceFilterPaper.toLowerCase();
+                  const matchesCategory =
+                    resourceFilterCategory === 'all' || res.category === resourceFilterCategory;
+                  const matchesSearch =
+                    !resourceSearch.trim() ||
+                    res.title.toLowerCase().includes(resourceSearch.toLowerCase()) ||
+                    res.description.toLowerCase().includes(resourceSearch.toLowerCase()) ||
+                    (res.authorOrPublisher && res.authorOrPublisher.toLowerCase().includes(resourceSearch.toLowerCase()));
+                  return matchesPaper && matchesCategory && matchesSearch;
+                })
+                .map((res) => (
+                  <div
+                    key={res.id}
+                    className="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-3 flex flex-col justify-between hover:shadow-xs transition"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wide">
+                            {res.paperId}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px] capitalize">
+                            {res.category.replace('_', ' ')}
+                          </span>
+                          {res.isAuthorized && (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1">
+                              <Shield className="w-3 h-3" /> Official ACCA
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteResource(res.id, res.title)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Delete Resource"
+                          aria-label={`Delete resource ${res.title}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <h3 className="font-bold text-slate-900 text-sm leading-snug">{res.title}</h3>
+                      <p className="text-xs text-slate-600 line-clamp-2">{res.description}</p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+                      <span className="truncate max-w-[200px]">By {res.authorOrPublisher || 'ACCA Master'}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {res.fileType && (
+                          <span className="font-bold uppercase text-[10px] px-1.5 py-0.5 bg-slate-200/70 rounded">
+                            {res.fileType} {res.fileSize ? `(${res.fileSize})` : ''}
+                          </span>
+                        )}
+                        {(res.fileUrl || res.externalUrl) && (
+                          <a
+                            href={res.fileUrl || res.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1 text-[11px]"
+                          >
+                            View Link <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>
@@ -1335,7 +1598,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.code} – {p.name}
+                      {p.code} - {p.name}
                     </option>
                   ))}
                 </select>
@@ -1567,7 +1830,17 @@ export const AdminDashboard: React.FC = () => {
       {showMockModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Create Timed CBE Mock Exam</h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Create Timed CBE Mock Exam</h3>
+              <button
+                type="button"
+                onClick={() => setShowMockModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1 rounded-lg transition"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreateMock} className="space-y-3 text-xs">
               <div>
                 <label className="block font-bold mb-1">Exam Title</label>
@@ -1589,7 +1862,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   {papers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.code} – {p.name}
+                      {p.code} - {p.name}
                     </option>
                   ))}
                 </select>
@@ -1705,6 +1978,182 @@ export const AdminDashboard: React.FC = () => {
                   className="px-5 py-2 bg-blue-600 text-white rounded-xl font-bold"
                 >
                   Broadcast
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD LEARNING RESOURCE */}
+      {showResourceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl border border-slate-100 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Add New Learning Resource</h3>
+                <p className="text-xs text-slate-500">Upload notes, past papers, syllabus kits, or link official ACCA study hubs.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResourceModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateResource} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Resource Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={newResource.title}
+                  onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  placeholder="e.g. FA1 Recording Transactions - Comprehensive Revision Notes 2026"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Resource Category *</label>
+                  <select
+                    value={newResource.category}
+                    onChange={(e) =>
+                      setNewResource({ ...newResource, category: e.target.value as ResourceCategory })
+                    }
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden capitalize"
+                  >
+                    <option value="study_notes">Study Notes</option>
+                    <option value="revision_notes">Revision Notes & Flashcards</option>
+                    <option value="past_papers">Past Exam Papers & CBE Practice</option>
+                    <option value="books">Books & Textbooks</option>
+                    <option value="examiner_reports">Examiner Reports & Articles</option>
+                    <option value="video_resources">Video Lectures & Walkthroughs</option>
+                    <option value="external_links">Official External Links</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Target ACCA Paper *</label>
+                  <select
+                    value={newResource.paperId}
+                    onChange={(e) => setNewResource({ ...newResource, paperId: e.target.value })}
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  >
+                    {papers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code} - {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Author / Publisher</label>
+                  <input
+                    type="text"
+                    value={newResource.authorOrPublisher}
+                    onChange={(e) =>
+                      setNewResource({ ...newResource, authorOrPublisher: e.target.value })
+                    }
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                    placeholder="e.g. ACCA Global, BPP, Kaplan, OpenTuition"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">File Type</label>
+                    <select
+                      value={newResource.fileType}
+                      onChange={(e) => setNewResource({ ...newResource, fileType: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden uppercase"
+                    >
+                      <option value="PDF">PDF</option>
+                      <option value="DOCX">DOCX</option>
+                      <option value="XLSX">XLSX</option>
+                      <option value="VIDEO">Video</option>
+                      <option value="LINK">Web Link</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">File Size / Length</label>
+                    <input
+                      type="text"
+                      value={newResource.fileSize}
+                      onChange={(e) => setNewResource({ ...newResource, fileSize: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      placeholder="e.g. 2.4 MB"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Download URL / Cloud Storage Link</label>
+                <input
+                  type="url"
+                  value={newResource.fileUrl}
+                  onChange={(e) => setNewResource({ ...newResource, fileUrl: e.target.value })}
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  placeholder="https://... or Google Drive / Firebase Storage URL"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Official External URL (Optional)</label>
+                <input
+                  type="url"
+                  value={newResource.externalUrl}
+                  onChange={(e) => setNewResource({ ...newResource, externalUrl: e.target.value })}
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  placeholder="https://www.accaglobal.com/..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Description / Syllabus Scope</label>
+                <textarea
+                  rows={3}
+                  value={newResource.description}
+                  onChange={(e) => setNewResource({ ...newResource, description: e.target.value })}
+                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                  placeholder="Provide guidance on how students should use this material, chapters covered, etc."
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="authorizedCheck"
+                  checked={newResource.isAuthorized}
+                  onChange={(e) => setNewResource({ ...newResource, isAuthorized: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                />
+                <label htmlFor="authorizedCheck" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                  Mark as Verified / Official ACCA Material
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowResourceModal(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs transition"
+                >
+                  Publish Resource
                 </button>
               </div>
             </form>
